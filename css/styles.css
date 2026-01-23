@@ -36,10 +36,15 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-main);
     font-family: var(--font-sans);
-    height: 100vh;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+@media (max-width: 1024px) {
+    body {
+        height: auto;
+        overflow: auto;
+    }
 }
 
 h1,
@@ -358,6 +363,18 @@ header {
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow-y: auto;
+    /* Allow modal container to scroll */
+    padding: 20px 0;
+    /* Add space for scroll */
+}
+
+@media (max-width: 1024px) {
+    .modal {
+        align-items: flex-start;
+        /* Start from top on mobile */
+        padding-top: 20px;
+    }
 }
 
 .modal-content {
@@ -711,6 +728,8 @@ header {
         height: auto;
         display: flex;
         flex-direction: column;
+        /* Reset any fixed height constraints */
+        max-height: none !important;
     }
 
     .arqueo-body {
@@ -718,7 +737,8 @@ header {
         display: flex;
         flex-direction: column;
         height: auto;
-        overflow-y: auto;
+        overflow: visible;
+        /* Let content grow naturally */
     }
 
     .arqueo-calc-panel {
