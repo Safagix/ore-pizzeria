@@ -150,6 +150,12 @@ textarea {
     box-shadow: 0 0 20px rgba(197, 160, 89, 0.2);
 }
 
+.login-card input {
+    text-align: center;
+    font-size: 1.1rem;
+    padding: 12px;
+}
+
 .login-logo {
     font-size: 3rem;
     color: var(--primary-gold);
@@ -562,6 +568,8 @@ header {
 .arqueo-mov-panel {
     padding: 15px;
     background: #0d1721;
+    display: flex;
+    flex-direction: column;
 }
 
 .arqueo-mov-panel h3 {
@@ -569,13 +577,15 @@ header {
     font-size: 0.95rem;
     font-weight: normal;
     margin-bottom: 10px;
+    flex-shrink: 0;
 }
 
 .arqueo-mov-form {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 10px;
+    flex-shrink: 0;
 }
 
 .arqueo-mov-form input,
@@ -693,14 +703,22 @@ header {
     margin-bottom: 0;
 }
 
-/* --- Responsivo: Tablet & Mobile --- */
-@media (max-width: 700px) {
+/* --- Responsivo: Tablet & Mobile (< 1024px) --- */
+@media (max-width: 1024px) {
     .arqueo-dashboard {
-        max-width: 98% !important;
+        max-width: 100% !important;
+        margin: 10px;
+        height: auto;
+        display: flex;
+        flex-direction: column;
     }
 
     .arqueo-body {
         grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        overflow-y: auto;
     }
 
     .arqueo-calc-panel {

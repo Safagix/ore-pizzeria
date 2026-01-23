@@ -1,381 +1,140 @@
-# 📘 Manual Paso a Paso: Desarrollo y Verificación de Software
+# 📘 El Manual Maestro de Desarrollo de Software
 
-**Objetivo:** Guía universal para construir software de calidad profesional, desde la idea hasta el mantenimiento.  
-**Audiencia:** Humanos, IAs y Sistemas Automatizados.
-
----
-
-## 🎯 Estructura del Manual
-
-Este manual sigue las **8 Fases del Ciclo de Vida del Software**. Cada fase incluye:
-
-- **Objetivo:** Qué se busca lograr.
-- **Pasos Detallados:** Instrucciones específicas.
-- **Herramientas Recomendadas:** Stack tecnológico sugerido.
-- **Criterios de Verificación:** Cómo saber si la fase está completa.
-- **Salida (Output):** Qué documento o artefacto se genera.
+**Objetivo:** Guía universal paso a paso para transformar una idea en software profesional, seguro y escalable.  
+**Nivel:** Desde Principiante hasta Profesional.  
+**Filosofía:** "Código limpio, secretos seguros y deployments automáticos".
 
 ---
 
-## FASE 1: 📝 Planificación & Concepto
+## 🗺️ El Mapa del Tesoro (Ciclo de Vida)
 
-### Objetivo
+Todo software exitoso sigue estas 8 fases. No te saltes ninguna.
 
-Definir **QUÉ** se va a construir y **POR QUÉ** es necesario.
-
-### Pasos
-
-1. **Identificar el Problema:** Escribe en 1-2 frases el problema que resuelve tu software.
-   - Ejemplo: *"Los cajeros de Ore Pizzeria pierden tiempo calculando manualmente el cierre de caja."*
-
-2. **Definir Usuarios (Roles):** Lista quiénes usarán el sistema.
-   - Ejemplo: Cajero, Chef, Admin, Servicio.
-
-3. **Establecer Objetivos SMART:**
-   - **S**pecific (Específico)
-   - **M**easurable (Medible)
-   - **A**chievable (Alcanzable)
-   - **R**elevant (Relevante)
-   - **T**ime-bound (Con plazo)
-
-4. **Crear Roadmap:** Divide el proyecto en hitos (milestones).
-   - Ejemplo: Hito 1 - MVP con login y pedidos básicos (2 semanas).
-
-### Herramientas
-
-- **Plane** (Gestión de proyectos open source)
-- **Motia** (Brainstorming visual)
-
-### Criterios de Verificación
-
-- [ ] Problema definido en máximo 2 frases.
-- [ ] Lista de roles de usuario completa.
-- [ ] Roadmap con al menos 3 hitos y fechas estimadas.
-
-### Salida
-
-- `ROADMAP.md` o tablero en Plane con tareas organizadas.
+| Fase | Nombre | Objetivo Clave | Herramienta Estrella |
+| :--- | :--- | :--- | :--- |
+| **1** | 📝 Planificación | Definir QUÉ y PARA QUIÉN. | Plane |
+| **2** | 📋 Requerimientos | Escribir las reglas del juego (PRD). | Notion / Markdown |
+| **3** | 🎨 Diseño | Visualizar antes de construir. | Figma |
+| **4** | 💻 Programación | Traducir diseño a código. | VS Code / Git |
+| **5** | 🛠️ Testing | Romperlo antes que el usuario. | Playwright |
+| **6** | 🚀 Deployment | Llevarlo al mundo real (Producción). | Vercel / Railway |
+| **7** | 📈 Mantenimiento | Mantenerlo vivo y sano. | Sentry |
+| **8** | 🔄 Evolución | Mejorar basado en uso real. | Posthog |
 
 ---
 
-## FASE 2: 📋 Requerimientos & Documentación
+## FASE 4: 💻 Programación e Infraestructura (La Base)
 
-### Objetivo
+Antes de escribir una línea de código lógica, necesitas cimientos sólidos.
 
-Escribir las **reglas del juego**: qué debe hacer el software y cómo.
+### 1. Control de Versiones (Git)
 
-### Pasos
+Nunca trabajes sin "puntos de guardado".
 
-1. **Crear PRD (Product Requirements Document):**
-   - Sección 1: Resumen del Proyecto
-   - Sección 2: Roles y Permisos
-   - Sección 3: Funcionalidades (divididas por módulo)
-   - Sección 4: Requerimientos Técnicos
+- **`git init`**: Crea el universo de tu proyecto.
+- **`.gitignore`**: El portero. Define qué NO entra (claves, archivos basura).
+- **`git add .` + `git commit`**: Guarda una foto del estado actual.
 
-2. **Definir Casos de Uso:** Escribe escenarios reales.
-   - Ejemplo: *"El cajero abre la app, ingresa su PIN, registra un pedido de pizza margarita para delivery."*
+### ⚠️ Lección Crítica: Manejo de Rutas
 
-3. **Especificar Reglas de Negocio:**
-   - Ejemplo: *"No se permite vender si el stock de masas es 0."*
+Si tu carpeta tiene espacios (ej: `Mi Proyecto`), la terminal se confundirá.
 
-### Herramientas
-
-- **Doku** (Documentación técnica)
-- **NotebookLM** (Generar FAQs automáticas)
-
-### Criterios de Verificación
-
-- [ ] PRD completo con todas las secciones.
-- [ ] Al menos 5 casos de uso documentados.
-- [ ] Reglas de negocio críticas identificadas.
-
-### Salida
-
-- `PRD.md` (Product Requirements Document)
+- ❌ Mal: `cd D:\Mi Proyecto`
+- ✅ Bien: `cd "D:\Mi Proyecto"` (Usa siempre comillas).
 
 ---
 
-## FASE 3: 🎨 Diseño (UI/UX)
+## FASE 6: 🚀 Deployment Avanzado (Secretos y Nube)
 
-### Objetivo
+Aquí es donde la mayoría falla. Tu código local funciona, pero en la nube se rompe. ¿Por qué? **Secretos**.
 
-Crear la **interfaz visual** antes de escribir código.
+### El Problema de las Llaves (API Keys)
 
-### Pasos
+Tus credenciales de base de datos (Firebase, Supabase) **NUNCA** deben subirse a GitHub. Si lo haces, hackers te robarán el acceso en segundos.
 
-1. **Wireframes (Baja Fidelidad):** Dibuja a mano o en herramienta simple la estructura de cada pantalla.
+### La Solución: Variables de Entorno
 
-2. **Mockups (Alta Fidelidad):** Diseña la interfaz con colores, tipografías e iconos finales.
+1. **Local:** Guardas tus claves en un archivo `js/config.js` o `.env` que está en tu `.gitignore`.
+2. **Nube (Vercel/Railway):** Escribes las claves manualmente en el panel de configuración del servidor.
 
-3. **Prototipo Interactivo:** Conecta las pantallas para simular el flujo del usuario.
+### 🎓 Caso de Estudio: Frontend Estático (HTML/JS)
 
-4. **Validar con Usuarios:** Muestra el prototipo a 2-3 usuarios reales y recoge feedback.
+En sitios sin backend (como un HTML simple), no puedes leer `.env` directamente.
 
-### Herramientas
+**El Patrón "Generador de Configuración":**
+Este truco profesional permite usar variables seguras en sitios estáticos.
 
-- **Figma** (Diseño colaborativo)
-- **Google Stitch** (Generación de UI con IA)
-- **Lucide Icons** (Iconografía)
-- **unDraw** (Ilustraciones vectoriales)
+1. **Crea un script `generate_config.js`:**
+   Este script se ejecuta *durante el deploy*. Lee las variables del servidor y crea el archivo `js/config.js` al vuelo.
 
-### Criterios de Verificación
+   ```javascript
+   // generate_config.js
+   const fs = require('fs');
+   const configContent = `const CONFIG = {
+       apikey: "${process.env.MI_API_KEY}"
+   };`;
+   fs.writeFileSync('./js/config.js', configContent);
+   ```
 
-- [ ] Wireframes de todas las pantallas principales.
-- [ ] Mockup de alta fidelidad de al menos 3 pantallas clave.
-- [ ] Prototipo navegable en Figma.
-- [ ] Feedback de usuarios documentado.
+2. **Configura el comando de Build:**
+   En `vercel.json`, dile al servidor que corra este script antes de publicar:
 
-### Salida
+   ```json
+   { "buildCommand": "node generate_config.js" }
+   ```
 
-- Archivo de Figma con diseños + `FEEDBACK_DISEÑO.md`
-
----
-
-## FASE 4: 💻 Programación (Frontend/Backend)
-
-### Objetivo
-
-Convertir el diseño en **código funcional**.
-
-### Pasos
-
-1. **Configurar Entorno de Desarrollo:**
-   - Instalar Git, Node.js, Editor (VS Code o Void).
-   - Crear repositorio en GitHub.
-
-2. **Arquitectura del Proyecto:**
-   - Definir estructura de carpetas (Frontend, Backend, Database).
-   - Elegir patrón de diseño (MVC, Clean Architecture).
-
-3. **Desarrollo Frontend:**
-   - Implementar componentes UI según diseño de Figma.
-   - Conectar con Backend vía APIs.
-
-4. **Desarrollo Backend:**
-   - Configurar base de datos (Supabase o Appwrite).
-   - Crear APIs RESTful.
-   - Implementar autenticación y autorización.
-
-5. **Integración:**
-   - Conectar Frontend con Backend.
-   - Probar flujos completos (login → acción → logout).
-
-### Herramientas
-
-- **Frontend:** Next.js, Astro
-- **Backend:** Supabase, Appwrite
-- **Editor:** Void, VS Code
-- **Control de Versiones:** Git + GitHub
-- **Automatización:** n8n
-
-### Criterios de Verificación
-
-- [ ] Repositorio Git inicializado con commits regulares.
-- [ ] Estructura de carpetas modular y organizada.
-- [ ] Al menos 3 pantallas funcionales.
-- [ ] API funcionando con al menos 5 endpoints.
-- [ ] Sistema de autenticación implementado.
-
-### Salida
-
-- Código fuente en repositorio Git
-- `ESTRUCTURA_PROYECTO.md`
+3. **Resultado:** Tu código en GitHub es seguro (sin claves), pero tu web en Vercel funciona perfecto (con claves inyectadas).
 
 ---
 
-## FASE 5: 🛠️ Testing & Calidad
+## 🚑 Troubleshooting (Solución de Problemas Reales)
 
-### Objetivo
+Errores que te pasarán sí o sí, y cómo arreglarlos.
 
-**Romper el software** antes de que lo hagan los usuarios.
+### 🛑 "Git Identity Unknown"
 
-### Pasos
+**Síntoma:** Intentas hacer commit y Git te grita "Please tell me who you are".
+**Solución:** Git necesita saber a quién culpar.
 
-1. **Testing Manual:**
-   - Probar cada funcionalidad manualmente.
-   - Documentar bugs encontrados en tickets.
+```bash
+git config --global user.email "tu@email.com"
+git config --global user.name "TuNombre"
+```
 
-2. **Testing Automatizado:**
-   - Escribir tests unitarios (funciones individuales).
-   - Escribir tests de integración (flujos completos).
-   - Configurar tests E2E (End-to-End) con Playwright.
+### 🛑 "Infinite Loading" en Producción
 
-3. **Análisis de Calidad:**
-   - Revisar código para detectar duplicación.
-   - Verificar que el código sea "Clean Code" (entendible).
+**Síntoma:** Tu web funciona en local, pero en Vercel se queda cargando (spinner eterno).
+**Causa:** El servidor no tiene acceso a tus claves (porque `config.js` está ignorado).
+**Solución:**
 
-4. **Testing de Usuario (UAT):**
-   - Invitar a 3-5 usuarios reales a probar la app.
-   - Registrar feedback y errores.
+1. Ve a Vercel > Settings > Environment Variables.
+2. Agrega tus claves una por una (copia y pega desde tu local).
+3. Haz un nuevo deploy (o push) para que tome los cambios.
 
-### Herramientas
+### 🛑 "Terminal irreconocible"
 
-- **Playwright** (Testing automatizado)
-- **Posthog** (Analíticas y grabaciones de sesión)
-- **Airbyte** (Validación de datos)
-
-### Criterios de Verificación
-
-- [ ] Todos los flujos críticos probados manualmente.
-- [ ] Al menos 10 tests automatizados escritos y pasando.
-- [ ] Lista de bugs documentada y priorizada.
-- [ ] Feedback de UAT recopilado.
-
-### Salida
-
-- `REPORTE_TESTING.md` con bugs y resultados
-- Suite de tests automatizados
+**Síntoma:** PowerShell dice que `git` no se reconoce.
+**Solución:** Instalaste Git pero no reiniciaste. Cierra VS Code y la terminal, y ábrelos de nuevo.
 
 ---
 
-## FASE 6: 🚀 Deployment (Llevar a Producción)
+## 🛠️ Herramientas Recomendadas (Stack 2026)
 
-### Objetivo
-
-Hacer que el software esté **disponible para usuarios reales**.
-
-### Pasos
-
-1. **Preparar Entorno de Producción:**
-   - Configurar dominio y certificado SSL/HTTPS.
-   - Elegir servicio de hosting (Vercel, Railway, Dokploy).
-
-2. **Configurar Variables de Entorno:**
-   - Separar credenciales de producción de desarrollo.
-   - Usar archivos `.env` seguros.
-
-3. **Deploy Inicial:**
-   - Subir código a servidor de producción.
-   - Verificar que todo funcione correctamente.
-
-4. **Configurar CI/CD (Opcional pero recomendado):**
-   - Automatizar deployment con cada push a rama `main`.
-
-5. **Configurar Backups:**
-   - Programar backups automáticos de la base de datos.
-
-### Herramientas
-
-- **Hosting Frontend:** Vercel
-- **Hosting Backend:** Railway, Dokploy
-- **Dominio:** Namecheap, Cloudflare
-- **SSL:** Let's Encrypt (gratis)
-- **Colas:** Inngest
-
-### Criterios de Verificación
-
-- [ ] App accesible desde URL pública con HTTPS.
-- [ ] Variables de entorno configuradas correctamente.
-- [ ] Backups automáticos funcionando.
-- [ ] Al menos 1 usuario real puede usar la app sin errores.
-
-### Salida
-
-- App en producción + `GUIA_DEPLOYMENT.md`
+- **Editor:** VS Code o Cursor (IA integrada).
+- **Frontend:** HTML/JS (Básico) o Next.js (Profesional).
+- **Backend:** Firebase (Rápido) o Supabase (SQL Robusto).
+- **Hosting:** Vercel (Frontend) + Railway (Backend).
+- **Diseño:** Figma.
+- **Gestión:** Plane.so.
 
 ---
 
-## FASE 7: 📈 Mantenimiento & Soporte
+### ✅ Checklist Final antes del Éxito
 
-### Objetivo
+- [ ] Código protegido en GitHub (Repo Privado).
+- [ ] `.gitignore` incluye `.env`, `node_modules` y archivos de config secretos.
+- [ ] Manual de Testing creado y ejecutado al menos una vez.
+- [ ] Backups de base de datos planificados.
+- [ ] README.md explica cómo instalar y correr el proyecto.
 
-Mantener el software **funcionando y actualizado**.
-
-### Pasos
-
-1. **Monitoreo Continuo:**
-   - Configurar alertas para errores críticos.
-   - Revisar logs diariamente.
-
-2. **Gestión de Incidentes:**
-   - Crear sistema de tickets para reportar bugs.
-   - Priorizar y resolver incidentes.
-
-3. **Actualizaciones:**
-   - Aplicar parches de seguridad.
-   - Actualizar dependencias regularmente.
-
-4. **Escalabilidad:**
-   - Monitorear uso de recursos (CPU, RAM, DB).
-   - Escalar si es necesario (más servidores o Load Balancer).
-
-### Herramientas
-
-- **Monitoreo:** Signoz (Open Source APM)
-- **Logs:** Sentry
-- **Tickets:** Plane
-
-### Criterios de Verificación
-
-- [ ] Sistema de monitoreo activo con alertas configuradas.
-- [ ] Logs accesibles y organizados.
-- [ ] Proceso documentado para resolver incidentes.
-- [ ] Al menos 1 actualización de seguridad aplicada.
-
-### Salida
-
-- Dashboard de monitoreo + `MANUAL_SOPORTE.md`
-
----
-
-## FASE 8: 🔄 Feedback & Evolución
-
-### Objetivo
-
-**Escuchar a los usuarios** y mejorar continuamente.
-
-### Pasos
-
-1. **Recopilar Feedback:**
-   - Analizar datos de Posthog (dónde se pierden usuarios).
-   - Leer comentarios y sugerencias.
-
-2. **Priorizar Mejoras:**
-   - Crear lista de features solicitadas.
-   - Ordenar por impacto vs esfuerzo.
-
-3. **Planificar Siguiente Iteración:**
-   - Volver a FASE 1 con nuevos objetivos.
-   - Repetir el ciclo.
-
-### Herramientas
-
-- **Posthog** (Analíticas de comportamiento)
-- **Plane** (Gestión de nuevas features)
-
-### Criterios de Verificación
-
-- [ ] Reporte de analíticas generado.
-- [ ] Lista de mejoras priorizadas.
-- [ ] Roadmap actualizado para próxima versión.
-
-### Salida
-
-- `FEEDBACK_USUARIOS.md` + Roadmap v2
-
----
-
-## ✅ Checklist Final de Verificación
-
-Antes de considerar el software "completo", verifica:
-
-- [ ] **Funcionalidad:** Todas las features del PRD implementadas.
-- [ ] **Seguridad:** HTTPS activo, autenticación robusta.
-- [ ] **Performance:** Tiempos de carga < 3 segundos.
-- [ ] **Usabilidad:** Al menos 5 usuarios pueden usarlo sin ayuda.
-- [ ] **Documentación:** PRD, Guía de Deploy y Manual de Soporte completos.
-- [ ] **Backups:** Sistema de respaldo funcionando.
-- [ ] **Monitoreo:** Logs y alertas configuradas.
-
----
-
-## 💡 Consejos Finales
-
-1. **No saltes fases:** Cada una tiene un propósito. Saltarse Testing es la receta para el desastre.
-2. **Documenta TODO:** Tu yo del futuro te lo agradecerá.
-3. **Itera rápido:** Es mejor lanzar un MVP imperfecto que esperar 6 meses por la "versión perfecta".
-4. **Automatiza lo repetitivo:** Usa n8n para tareas como enviar reportes o backups.
-
----
-
-*Este manual combina [GUIA_DESARROLLO_PRO.md](GUIA_DESARROLLO_PRO.md) y [DICCIONARIO_DEV.md](DICCIONARIO_DEV.md). Úsalo como tu biblia de desarrollo.*
+*Este manual es un documento vivo. Actualízalo con cada error nuevo que soluciones.*
