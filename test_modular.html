@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modular Architecture</title>
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .card {
+            background: #222;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+            border-radius: 8px;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 8px 12px;
+            background: #dda15e;
+            border: none;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #eebb77;
+        }
+
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow: auto;
+            max-height: 200px;
+            color: #0f0;
+        }
+
+        .status {
+            padding: 5px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .warn {
+            background: #ff9800;
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🛠️ Test de Arquitectura Modular</h1>
+    <div id="protocol-warning" class="status warn" style="display:none">
+        ⚠️ Estás usando protocolo <b>file://</b>. Los módulos ES6 no funcionarán por seguridad CORS.
+        Por favor usa un servidor local (VS Code Live Server, <code>npm run dev</code>, etc).
+    </div>
+
+    <!-- 1. Config Heredada (Global) -->
+    <script src="js/config.js"></script>
+
+    <!-- 2. Firebase SDKs (CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- 3. Módulos Nuevos -->
+    <script type="module">
+        // Importamos desde la nueva estructura
+        import { subscribeToProducts } from './src/api/products.js';
+        import { createOrder, subscribeToOrders } from './src/api/orders.js';
+        import { formatCurrency } from './src/utils/formatters.js';
+
+        // Check Protocol
+        if (window.location.protocol === 'file:') {
+            document.getElementById('protocol-warning').style.display = 'block';
+        }
+
+        const log = (msg) => {
+            const el = document.getElementById('console-log');
+            el.innerHTML = `> ${msg}\n` + el.innerHTML;
+        };
+
+        // --- TEST PRODUCTS ---
+        window.testLoadProducts = () => {
+            log("Suscribiendo a Productos...");
+            subscribeToProducts((data) => {
+                log(`✅ Productos cargados: ${data.flavors.length} sabores, ${data.drinks.length} bebidas.`);
+                const preview = data.flavors.slice(0, 2).map(f => f.name).join(', ');
+                document.getElementById('products-result').textContent = `Ejemplos: ${preview}...`;
+            });
+        };
+
+        // --- TEST ORDERS ---
+        window.testCreateOrder = () => {
+            const mockOrder = {
+                customer: "Test Modular User",
+                type: "Local",
+                method: "Efectivo",
+                payStatus: "pending",
+                items: [
+                    { type: 'pizza', name: 'Pizza Test Modular', price: 50000 }
+                ],
+                total: 50000,
+                deliveryFee: 0,
+                status: 'cooking'
+            };
+
+            log("Creando Pedido de Prueba...");
+            createOrder(mockOrder)
+                .then(res => {
+                    log(`✅ Pedido Creado! Key: ${res.key}, ID: ${res.id}`);
+                })
+                .catch(err => log(`❌ Error: ${err.message}`));
+        };
+
+        // Init Order Listener
+        subscribeToOrders((orders) => {
+            const count = orders.length;
+            document.getElementById('orders-count').textContent = `${count} pedidos en sistema`;
+        }, 5);
+
+        // Test Utility
+        document.getElementById('test-fmt').textContent = formatCurrency(150000);
+
+    </script>
+
+    <div class="card">
+        <h3>1. Utilerías (utils/formatters.js)</h3>
+        <p>Prueba de formato 150000: <b id="test-fmt">...</b></p>
+    </div>
+
+    <div class="card">
+        <h3>2. API Productos (api/products.js)</h3>
+        <button onclick="testLoadProducts()">📡 Cargar Productos</button>
+        <p id="products-result" style="color:#aaa; margin-top:5px;">Waiting...</p>
+    </div>
+
+    <div class="card">
+        <h3>3. API Pedidos (api/orders.js)</h3>
+        <p id="orders-count">Escuchando...</p>
+        <button onclick="testCreateOrder()">➕ Crear Pedido Test</button>
+    </div>
+
+    <div class="card">
+        <h3>Console Output</h3>
+        <pre id="console-log"></pre>
+    </div>
+
+</body>
+
+</html>

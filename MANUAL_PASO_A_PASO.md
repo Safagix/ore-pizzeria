@@ -42,6 +42,14 @@ Si tu carpeta tiene espacios (ej: `Mi Proyecto`), la terminal se confundirá.
 - ❌ Mal: `cd D:\Mi Proyecto`
 - ✅ Bien: `cd "D:\Mi Proyecto"` (Usa siempre comillas).
 
+### 📱 Regla de Oro en Diseño Móvil
+
+Los celulares odian las tablas y las columnas apretadas.
+
+- **En PC:** Usa `grid-template-columns: 1fr 1fr` (Lado a lado).
+- **En Móvil:** Usa siempre `display: flex; flex-direction: column` (Uno arriba del otro).
+*Si intentas meter 2 columnas en 360px de ancho, se romperá. Apila los elementos.*
+
 ---
 
 ## FASE 6: 🚀 Deployment Avanzado (Secretos y Nube)
@@ -56,6 +64,29 @@ Tus credenciales de base de datos (Firebase, Supabase) **NUNCA** deben subirse a
 
 1. **Local:** Guardas tus claves en un archivo `js/config.js` o `.env` que está en tu `.gitignore`.
 2. **Nube (Vercel/Railway):** Escribes las claves manualmente en el panel de configuración del servidor.
+
+### 🛡️ Seguridad Real: El "Candado Anónimo"
+
+No basta con ocultar las llaves. Necesitas proteger la puerta.
+
+1. **Reglas de Base de Datos:**
+    Configura Firebase para que solo "amigos" entren.
+
+    ```json
+    ".read": "auth != null", ".write": "auth != null"
+    ```
+
+    *(Traducción: Si no tienes credencial, no pasas).*
+
+2. **El Carnet de Identidad (Auth Anónimo):**
+    Para que tu app tenga "credencial" sin pedir login, usa:
+    `firebase.auth().signInAnonymously()`
+
+3. **Habilitar en Consola (¡Importante!):**
+    De nada sirve el código si Google no lo sabe.
+    - Ve a **Firebase Console > Authentication > Sign-in method**.
+    - Activa **Anonymous**.
+    *Sin esto, recibirás el temido "Error 400".*
 
 ### 🎓 Caso de Estudio: Frontend Estático (HTML/JS)
 
@@ -110,6 +141,18 @@ git config --global user.name "TuNombre"
 1. Ve a Vercel > Settings > Environment Variables.
 2. Agrega tus claves una por una (copia y pega desde tu local).
 3. Haz un nuevo deploy (o push) para que tome los cambios.
+
+### 🛑 "Error 400: Operation not allowed"
+
+**Síntoma:** Tu consola se pone roja al intentar conectar a Firebase.
+**Causa:** Intentas usar `signInAnonymously` pero no lo activaste en la consola.
+**Solución:** Ve a Firebase > Authentication > Habilita "Anónimo".
+
+### 🛑 "Veo datos duplicados"
+
+**Causa:** Tu código de carga inicial (`seedDatabase`) se ejecuta cada vez que recargas.
+**Solución:** Borra la base de datos una vez y usa un mecanismo de "Carga Única" o verifica si ya existen datos antes de escribir.
+**Comando de Emergencia:** Crea una función `forceUpdateMenu()` que limpie todo antes de volver a escribir.
 
 ### 🛑 "Terminal irreconocible"
 
