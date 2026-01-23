@@ -105,7 +105,7 @@ const app = {
         if (confirm("¿Seguro que quieres borrar el menú actual y cargar la Carta Oficial?")) {
             firebase.database().ref('products').remove()
                 .then(() => {
-                    this.seedDatabase();
+                    // El listener de fetchProducts detectará que está vacía y la llenará automáticamente
                     alert("Menú actualizado exitosamente. Recarga la página.");
                     window.location.reload();
                 });
