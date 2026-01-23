@@ -57,6 +57,11 @@ const app = {
     },
 
     fetchProducts: function () {
+        // Auth Anónimo para permitir reglas de seguridad básicas
+        firebase.auth().signInAnonymously().catch(function (error) {
+            console.error("Auth Error", error);
+        });
+
         firebase.database().ref('products').on('value', snap => {
             const data = snap.val();
             if (!data) {
@@ -71,24 +76,40 @@ const app = {
     },
 
     seedDatabase: function () {
-        // Initial Data
+        // Carta Oficial Ore Pizzeria
         const initialFlavors = [
-            { id: 'mus', name: 'Muzzarella', price: 10, cat: 'flavors' },
-            { id: 'nap', name: 'Napolitana', price: 12, cat: 'flavors' },
-            { id: 'pep', name: 'Pepperoni', price: 14, cat: 'flavors' },
-            { id: 'cal', name: 'Calabresa', price: 13, cat: 'flavors' },
-            { id: 'fug', name: 'Fugazzeta', price: 12, cat: 'flavors' },
-            { id: '4qu', name: '4 Quesos', price: 15, cat: 'flavors' },
-            { id: 'pol', name: 'Pollo Catupiry', price: 16, cat: 'flavors' }
+            { id: 'mus', name: 'Mozzarella', price: 40000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, hojas de Albahaca, aceitunas' },
+            { id: 'pep', name: 'Pepperoni', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, pepperoni, aceitunas' },
+            { id: 'pal', name: 'Palmito', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, palmito, salsa golf, aceitunas' },
+            { id: 'cat', name: 'Catupiry con pollo', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, queso catupiry, pollo desmechado, orégano, aceitunas' },
+            { id: 'nap', name: 'Napolitana', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, rodajas de tomate, orégano, jamón en cubitos, ajo, hojas de albahaca, aceitunas' },
+            { id: 'cho', name: 'Choclo con catupiry', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, queso catupiry, choclo, orégano, aceitunas' },
+            { id: 'cip', name: 'La Cipolla', price: 46000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, queso azul, cebolla caramelizada, panceta, aceitunas' },
+            { id: 'veg', name: 'Vegetariana', price: 46000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, cherry, choclo, cebolla morada, palmito, locote verde, aceitunas' },
+            { id: 'arr', name: 'El Arriero', price: 50000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, chorizo picante, cebolla morada, locote en julianas, orégano, aceitunas, salsa picante casera' }
         ];
         const initialDrinks = [
-            { id: 'coke', name: 'Coca Cola 1.5L', price: 3, cat: 'drinks' },
-            { id: 'wat', name: 'Agua Min. 500ml', price: 1, cat: 'drinks' },
-            { id: 'beer', name: 'Cerveza 1L', price: 4, cat: 'drinks' }
+            { id: 'coke500', name: 'Coca Cola 500ml', price: 9000, cat: 'drinks' },
+            { id: 'coke15', name: 'Coca Cola 1.5L', price: 15000, cat: 'drinks' },
+            { id: 'water500', name: 'Agua 500 ml', price: 5000, cat: 'drinks' },
+            { id: 'water1', name: 'Agua 1 L', price: 7000, cat: 'drinks' }
         ];
 
         initialFlavors.forEach(p => firebase.database().ref('products/flavors').push(p));
         initialDrinks.forEach(p => firebase.database().ref('products/drinks').push(p));
+        console.log("Base de datos actualizada con Carta Oficial.");
+    },
+
+    // Herramienta de migración
+    forceUpdateMenu: function () {
+        if (confirm("¿Seguro que quieres borrar el menú actual y cargar la Carta Oficial?")) {
+            firebase.database().ref('products').remove()
+                .then(() => {
+                    this.seedDatabase();
+                    alert("Menú actualizado exitosamente. Recarga la página.");
+                    window.location.reload();
+                });
+        }
     },
 
     addProduct: function () {
@@ -765,6 +786,8 @@ const app = {
                     <div class="flavor-card" id="card-${f.id}" onclick="app.selectFlavor('${f.id}')">
                         <div class="flavor-img" ${f.img ? `style="background-image: url('${f.img}'); background-size: cover;"` : ''}></div>
                         <span style="font-weight: bold; color: #dac0a3;">${f.name}</span>
+                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${f.ingredients}</p>` : ''}
+                        <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
                     </div>
                 `).join('');
             }
