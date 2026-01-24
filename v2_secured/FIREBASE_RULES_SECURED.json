@@ -11,8 +11,10 @@
         "orders": {
             ".read": "auth != null",
             ".write": "auth != null",
+            ".indexOn": [
+                "date"
+            ],
             "$orderId": {
-                // Validación de Schema Básico
                 ".validate": "newData.hasChildren(['id', 'total', 'customer']) && newData.child('total').isNumber() && newData.child('total').val() >= 0"
             }
         },

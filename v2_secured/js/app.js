@@ -755,9 +755,25 @@ const app = {
 
     // --- ADMIN STATISTICS ---
     loadAdminStats: function () {
-        APP_STATE.dbRef.once('value', snap => {
-            const today = new Date();
-            const todayStr = today.toLocaleDateString();
+        const pizzaPeriod = document.getElementById('admin-pizza-period').value;
+        const drinkPeriod = document.getElementById('admin-drink-period').value;
+        const needsHistory = pizzaPeriod !== 'day' || drinkPeriod !== 'day';
+
+        const today = new Date();
+        const todayStr = today.toLocaleDateString(); // "DD/MM/YYYY" format depends on locale, ensure consistency in app
+
+        let query = APP_STATE.dbRef;
+
+        // OPTIMIZATION: If only showing "Today", do NOT fetch all history.
+        if (!needsHistory) {
+            // Requires .indexOn: ["date"] in Firebase Rules
+            query = APP_STATE.dbRef.orderByChild('date').equalTo(todayStr);
+            console.log("⚡ Cargando estadísticas optimizadas (Solo Hoy)");
+        } else {
+            console.warn("🐌 Cargando historial completo (Mes/Año seleccionado)...");
+        }
+
+        query.once('value', snap => {
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
 
@@ -780,13 +796,19 @@ const app = {
                 // Only count paid orders
                 if (o.payStatus !== 'paid') return;
 
-                // Today's cash
+                // Today's cash (Always needed for the Cash Cards)
+                // NOTE: If we are in "Today Only" mode, 'snap' only contains today's orders, so we sums work naturally.
+                // If we are in "History" mode, we must filter isToday.
                 if (isToday) {
                     if (o.method === 'Efectivo') cashEfectivo += (o.total || 0);
                     else cashTransfer += (o.total || 0);
                 }
 
                 // Count items
+                // If optimization is ON, snap contains only Today. 
+                // So isThisMonth/Year will be true for these items too (Today is in this month), 
+                // but we won't have *past* items. This is acceptable as the UI asked for "Today" ONLY.
+                // If optimization is OFF, snap contains everything, loops over all.
                 o.items.forEach(item => {
                     if (item.type === 'pizza') {
                         if (isToday) pizzaCountDay++;
@@ -805,15 +827,17 @@ const app = {
             document.getElementById('admin-cash-transfer').textContent = `Gs. ${cashTransfer.toLocaleString()}`;
             document.getElementById('admin-cash-total').textContent = `Gs. ${(cashEfectivo + cashTransfer).toLocaleString()}`;
 
-            // Update UI - Pizza count based on selector
-            const pizzaPeriod = document.getElementById('admin-pizza-period').value;
+            // Update UI - Pizza count
             let pizzaDisplay = pizzaPeriod === 'day' ? pizzaCountDay : (pizzaPeriod === 'month' ? pizzaCountMonth : pizzaCountYear);
             document.getElementById('admin-pizza-count').textContent = pizzaDisplay;
 
-            // Update UI - Drink count based on selector
-            const drinkPeriod = document.getElementById('admin-drink-period').value;
+            // Update UI - Drink count
             let drinkDisplay = drinkPeriod === 'day' ? drinkCountDay : (drinkPeriod === 'month' ? drinkCountMonth : drinkCountYear);
             document.getElementById('admin-drink-count').textContent = drinkDisplay;
+
+            if (needsHistory && snap.numChildren() > 2000) {
+                alert("⚠️ Aviso: Tienes muchos pedidos históricos. Se recomienda usar 'Reportes > Extraer y Limpiar' para mantener la velocidad.");
+            }
         });
     },
 
