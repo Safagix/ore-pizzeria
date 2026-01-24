@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Ore Artesanal | POS</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <!-- Local Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Excel Lib -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; font-weight: bold; color: #888;">Cargando ORE...</p>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="screen">
+        <div class="login-overlay"></div>
+        <div class="login-card">
+            <div class="login-logo brand">ORE</div>
+            <p style="margin-bottom: 20px; color: #ccc; font-style: italic;">Pizzería & Panadería Artesanal</p>
+
+            <select id="role-select" style="padding: 15px; font-size: 1.1rem; margin-bottom: 20px; background: #222;">
+                <option value="" disabled selected>Seleccionar Rol</option>
+                <option value="cashier">Cajero</option>
+                <option value="chef">Cocina (Chef)</option>
+                <option value="admin">Administrador</option>
+                <option value="service">SERVICIO (Movimientos)</option>
+            </select>
+
+            <input type="password" id="login-pin" placeholder="PIN de Acceso"
+                style="padding: 15px; font-size: 1.1rem; margin-bottom: 20px; text-align: center;">
+
+            <button class="btn btn-gold" style="width: 100%;" onclick="app.login()">INGRESAR</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app-screen" class="screen hidden">
+        <header>
+            <div class="brand" style="color: var(--primary-gold); font-size: 1.5rem;">ORE ARTESANAL</div>
+            <div id="nav-cashier" class="nav-tabs hidden">
+                <div class="nav-tab active" onclick="app.switchTab('order')">Nuevo Pedido</div>
+                <div class="nav-tab" onclick="app.switchTab('sent')">Enviados</div>
+                <div class="nav-tab" onclick="app.switchTab('clients')">Clientes</div>
+                <div class="nav-tab" onclick="app.switchTab('history')">Historial</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="user-display" style="color: #888; font-size: 0.9rem;"></span>
+                <button class="btn btn-outline" style="padding: 5px 15px; font-size: 0.8rem;"
+                    onclick="location.reload()">SALIR</button>
+            </div>
+        </header>
+
+        <!-- CASHIER VIEW -->
+        <div id="view-cashier" class="content-view hidden" style="height: 100%;">
+            <!-- NEW ORDER TAB -->
+            <div id="tab-order" class="cashier-grid">
+                <div class="builder-area">
+                    <!-- Config Header -->
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                        <div style="background: var(--bg-card); padding: 10px 20px; border-radius: var(--radius);">
+                            <small style="color: #888;">Stock Masas</small>
+                            <div id="stock-display"
+                                style="font-weight: bold; color: var(--primary-gold); font-size: 1.2rem;">--</div>
+                        </div>
+                        <div style="background: var(--bg-card); padding: 10px 20px; border-radius: var(--radius);">
+                            <small style="color: #888;">Stock Bebidas</small>
+                            <div id="stock-drinks-display"
+                                style="font-weight: bold; color: #2196f3; font-size: 1.2rem;">--</div>
+                        </div>
+                        <div style="background: var(--bg-card); padding: 10px 20px; border-radius: var(--radius);">
+                            <small style="color: #888;">Caja Chica</small>
+                            <div id="petty-cash-display" style="font-weight: bold; font-size: 1.2rem;">Gs. 0</div>
+                        </div>
+                    </div>
+
+                    <!-- Pizza Builder -->
+                    <h2 class="brand" style="text-align: center; margin-bottom: 15px; color: var(--text-muted);">Armar
+                        Pizza</h2>
+
+                    <div class="pizza-switch-container">
+                        <div class="switch-box">
+                            <div id="sw-full" class="switch-opt active" onclick="app.setPizzaMode('full')">Completa
+                            </div>
+                            <div id="sw-half" class="switch-opt" onclick="app.setPizzaMode('half')">Mitad y Mitad</div>
+                        </div>
+                    </div>
+
+                    <div id="selection-instruction" style="text-align: center; margin-bottom: 20px; color: #aaa;">
+                        Selecciona 1 sabor
+                    </div>
+
+                    <div class="flavors-grid" id="flavors-container">
+                        <!-- JS populated -->
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <h3 class="brand" style="margin-bottom: 15px; color: var(--text-muted);">Bebidas / Otros</h3>
+                        <div class="flavors-grid" id="drinks-container"></div>
+                    </div>
+
+                    <div style="background: #222; padding: 15px; border-radius: var(--radius); margin-top: 20px;">
+                        <input type="text" id="item-notes" placeholder="Observaciones (ej. Sin cebolla, bien cocida)"
+                            maxlength="100">
+                        <button class="btn btn-gold" style="width: 100%;" onclick="app.addToCart()">AGREGAR AL
+                            PEDIDO</button>
+                    </div>
+                </div>
+
+                <!-- Sidebar logic -->
+                <div class="cart-sidebar">
+                    <h3 class="brand" style="margin-bottom: 20px; color: white;">Resumen</h3>
+                    <div class="cart-list" id="cart-container"></div>
+
+                    <div style="margin-top: auto;">
+                        <!-- Client Management -->
+                        <div style="position: relative; margin-bottom: 15px;">
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="customer-name" placeholder="Buscar o escribir cliente..."
+                                    style="flex: 1; border-color: var(--primary-gold);"
+                                    oninput="app.searchClients(this.value)" autocomplete="off">
+                                <button class="btn" onclick="app.setOcasional()"
+                                    style="padding: 10px; background: #555; font-size: 0.8rem;"
+                                    title="Cliente Ocasional">👤</button>
+                                <button class="btn btn-gold" onclick="app.addClient()"
+                                    style="padding: 10px; font-size: 0.8rem;" title="Agregar Cliente">+</button>
+                            </div>
+                            <div id="client-suggestions" class="hidden" style="
+                                position: absolute; top: 100%; left: 0; right: 0; 
+                                background: #222; border: 1px solid #444; border-radius: 5px;
+                                max-height: 150px; overflow-y: auto; z-index: 100;"></div>
+                        </div>
+
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;">
+                            <span>Total</span>
+                            <span id="cart-total" style="color: var(--primary-gold);">Gs. 0</span>
+                        </div>
+
+                        <!-- Vuelto Calculator -->
+                        <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+                            <input type="number" id="pay-amount" placeholder="Paga con..."
+                                style="flex: 1; padding: 5px; background: #111; border: 1px solid #444; color: #fff;"
+                                oninput="app.calculateChange()">
+                            <div
+                                style="flex: 1; padding: 5px; background: #222; border-radius: 5px; text-align: right;">
+                                <small style="display: block; font-size: 0.6rem; color: #888;">Vuelto</small>
+                                <span id="change-amount"
+                                    style="color: var(--success); font-weight: bold; font-size: 0.9rem;">Gs. 0</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <select id="order-type" onchange="app.toggleDeliveryFee()">
+                                <option value="Local">Para Comer Acá</option>
+                                <option value="TakeAway">Retiro en Local</option>
+                                <option value="Delivery">Delivery</option>
+                            </select>
+                        </div>
+                        <!-- Delivery Fee (hidden by default) -->
+                        <div id="delivery-fee-container" class="hidden" style="margin-bottom: 10px;">
+                            <input type="number" id="delivery-fee" placeholder="Monto Delivery (Gs.)"
+                                style="width: 100%; padding: 10px; background: #222; border: 1px solid #f57c00; color: white;">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <select id="payment-method">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="A elegir">A elegir</option>
+                            </select>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button class="btn btn-pending" onclick="app.sendOrder('pending')">Enviar al Chef
+                                (Pendiente)</button>
+                            <button class="btn btn-success" onclick="app.sendOrder('paid')">Cobrado y Enviar
+                                (Pagado)</button>
+                            <button class="btn btn-outline" style="margin-top: 20px; border-color: #555; color: #888;"
+                                onclick="app.requestCloseShift()">CERRAR TURNO / CAJA</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Tabs -->
+            <div id="tab-sent" class="hidden" style="padding: 20px;">
+                <h2 class="brand">Pedidos Enviados (Recientes)</h2>
+                <div id="sent-orders-list" style="margin-top:20px; display: flex; flex-wrap:wrap; gap:15px;"></div>
+            </div>
+
+            <!-- Clients Tab -->
+            <div id="tab-clients" class="hidden" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 class="brand">Directorio de Clientes</h2>
+                    <input type="text" id="client-search-input" placeholder="Buscar cliente..."
+                        style="width: 300px; padding: 10px; background: #222; border: 1px solid #444; color: white;"
+                        oninput="app.renderClients()">
+                </div>
+                <div id="clients-list"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                    <!-- Rendered in app.js -->
+                </div>
+            </div>
+            <div id="tab-history" class="hidden" style="padding: 20px;">
+                <h2 class="brand">Historial / Caja</h2>
+                <div class="stats-card">
+                    <h3>Total Recaudado Hoy: <span id="daily-total" style="color: var(--success);">$0.00</span></h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHEF VIEW -->
+        <div id="view-chef" class="content-view hidden">
+            <div style="padding: 20px; background: #222; text-align: center;">
+                <h2 class="brand" style="color: white; letter-spacing: 2px;">COLA DE PEDIDOS</h2>
+            </div>
+            <div class="kitchen-board" id="chef-board"></div>
+        </div>
+
+        <!-- ADMIN VIEW -->
+        <div id="view-admin" class="content-view hidden">
+            <div class="admin-panel">
+                <h1 class="brand" style="color: var(--primary-gold); margin-bottom: 20px;">Panel Administrativo</h1>
+
+                <!-- Admin Navigation Tabs -->
+                <div
+                    style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
+                    <button class="nav-tab active" onclick="app.switchAdminTab('productos')" id="admin-tab-productos"
+                        style="padding: 10px 20px; background: var(--primary-gold); border: none; color: black; border-radius: 5px 5px 0 0; font-weight: bold; cursor: pointer;">🍕
+                        Productos</button>
+                    <button class="nav-tab" onclick="app.switchAdminTab('stats')" id="admin-tab-stats"
+                        style="padding: 10px 20px; background: #333; border: none; color: white; border-radius: 5px 5px 0 0; cursor: pointer;">📊
+                        Estadísticas</button>
+                    <button class="nav-tab" onclick="app.switchAdminTab('reportes')" id="admin-tab-reportes"
+                        style="padding: 10px 20px; background: #333; border: none; color: white; border-radius: 5px 5px 0 0; cursor: pointer;">📁
+                        Reportes</button>
+                </div>
+
+                <!-- TAB: Productos -->
+                <div id="admin-content-productos" class="admin-tab-content">
+                    <div class="stats-card" style="margin-bottom: 30px;">
+                        <h3>Gestión de Productos</h3>
+                        <p style="color: #aaa; margin: 10px 0;">Agrega nuevos sabores o bebidas al menú.</p>
+
+                        <div style="display: grid; gap: 10px; text-align: left;">
+                            <select id="prod-category"
+                                style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
+                                <option value="flavors">Pizza (Sabor)</option>
+                                <option value="drinks">Bebida / Otro</option>
+                            </select>
+                            <input type="text" id="prod-name" placeholder="Nombre del Producto"
+                                style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
+                            <input type="number" id="prod-price" placeholder="Precio (Gs. ej: 45000)"
+                                style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label for="prod-img"
+                                    style="padding: 10px 15px; background: #444; border-radius: 5px; cursor: pointer; color: white;">📷
+                                    Seleccionar Foto</label>
+                                <input type="file" id="prod-img" accept="image/*" style="display: none;">
+                                <span id="prod-img-name" style="color: #888; font-size: 0.9rem;">Sin imagen</span>
+                            </div>
+
+                            <button class="btn btn-gold" onclick="app.addProduct()">AGREGAR PRODUCTO</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Estadísticas -->
+                <div id="admin-content-stats" class="admin-tab-content hidden">
+                    <div class="stats-card" style="margin-bottom: 30px;">
+                        <h3>📊 Dashboard de Estadísticas</h3>
+
+                        <!-- Today's Cash -->
+                        <div
+                            style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px; border-radius: 10px; margin: 15px 0;">
+                            <h4 style="color: #aaa; margin: 0 0 10px;">Arqueo del Día</h4>
+                            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; color: #888;">Efectivo</span>
+                                    <div id="admin-cash-efectivo"
+                                        style="font-size: 1.5rem; color: #4caf50; font-weight: bold;">Gs. 0</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; color: #888;">Transferencia</span>
+                                    <div id="admin-cash-transfer"
+                                        style="font-size: 1.5rem; color: #2196f3; font-weight: bold;">Gs. 0</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <span style="font-size: 0.9rem; color: #888;">TOTAL</span>
+                                    <div id="admin-cash-total"
+                                        style="font-size: 1.8rem; color: var(--primary-gold); font-weight: bold;">Gs. 0
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sales Counters -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <!-- Pizzas -->
+                            <div style="background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center;">
+                                <span style="font-size: 2rem;">🍕</span>
+                                <h4 style="margin: 5px 0; color: #dac0a3;">Pizzas Vendidas</h4>
+                                <div id="admin-pizza-count" style="font-size: 2rem; font-weight: bold; color: white;">0
+                                </div>
+                                <select id="admin-pizza-period" onchange="app.loadAdminStats()"
+                                    style="margin-top: 10px; padding: 5px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;">
+                                    <option value="day">Hoy</option>
+                                    <option value="month">Este Mes</option>
+                                    <option value="year">Este Año</option>
+                                </select>
+                            </div>
+                            <!-- Drinks -->
+                            <div style="background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center;">
+                                <span style="font-size: 2rem;">🥤</span>
+                                <h4 style="margin: 5px 0; color: #dac0a3;">Bebidas Vendidas</h4>
+                                <div id="admin-drink-count" style="font-size: 2rem; font-weight: bold; color: white;">0
+                                </div>
+                                <select id="admin-drink-period" onchange="app.loadAdminStats()"
+                                    style="margin-top: 10px; padding: 5px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;">
+                                    <option value="day">Hoy</option>
+                                    <option value="month">Este Mes</option>
+                                    <option value="year">Este Año</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Reportes -->
+                <div id="admin-content-reportes" class="admin-tab-content hidden">
+                    <div class="stats-card">
+                        <h3>Reporte de Ventas</h3>
+                        <p style="color: #aaa; margin: 10px 0;">Selecciona un rango de fechas para extraer y limpiar
+                            datos.
+                        </p>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+                            <div>
+                                <label style="display: block; color: #888; font-size: 0.8rem;">Desde:</label>
+                                <input type="date" id="admin-date-start"
+                                    style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
+                            </div>
+                            <div>
+                                <label style="display: block; color: #888; font-size: 0.8rem;">Hasta:</label>
+                                <input type="date" id="admin-date-end"
+                                    style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-gold" style="flex: 1;" onclick="app.exportExcel(false)">EXTRAER
+                                (.XLSX)</button>
+                            <button class="btn" style="flex: 1; background: #d32f2f; color: white; border: none;"
+                                onclick="app.exportExcel(true)">EXTRAER Y LIMPIAR</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SERVICE VIEW (MOVIMIENTOS) -->
+        <div id="view-service" class="content-view hidden"
+            style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <h1 class="brand" style="color: var(--primary-gold); margin-bottom: 40px;">Gestión de Movimientos</h1>
+
+            <!-- Main Buttons -->
+            <div id="service-buttons" style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
+                <button onclick="app.openMovementForm('ingreso')" style="
+                    width: 200px; height: 200px; 
+                    background: var(--success); 
+                    border: none; border-radius: 20px; 
+                    color: white; font-size: 1.5rem; font-weight: bold;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+                    transition: transform 0.2s;">
+                    <span style="font-size: 4rem; margin-bottom: 10px;">💰</span>
+                    INGRESO
+                </button>
+
+                <button onclick="app.openMovementForm('egreso')" style="
+                    width: 200px; height: 200px; 
+                    background: #d32f2f; 
+                    border: none; border-radius: 20px; 
+                    color: white; font-size: 1.5rem; font-weight: bold;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+                    transition: transform 0.2s;">
+                    <span style="font-size: 4rem; margin-bottom: 10px;">💸</span>
+                    EGRESO
+                </button>
+            </div>
+
+            <!-- Movement Form Modal (Inline) -->
+            <div id="service-form" class="hidden" style="
+                background: var(--bg-card); 
+                padding: 30px; border-radius: 20px; 
+                width: 100%; max-width: 400px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+                text-align: center; margin-top: 20px;">
+
+                <h2 id="mov-title" style="margin-bottom: 20px; color: white;">REGISTRAR MOVIMIENTO</h2>
+
+                <input type="number" id="mov-amount" placeholder="Monto (Gs. ej: 50000)" style="
+                    width: 100%; padding: 15px; margin-bottom: 15px; 
+                    background: #222; border: 1px solid #444; 
+                    color: white; font-size: 1.2rem; border-radius: 10px;">
+
+                <textarea id="mov-desc" placeholder="Descripción (Obligatorio)" rows="3" style="
+                    width: 100%; padding: 15px; margin-bottom: 20px; 
+                    background: #222; border: 1px solid #444; 
+                    color: white; font-size: 1rem; border-radius: 10px; resize: none;"></textarea>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" onclick="app.initServiceView()"
+                        style="flex: 1; background: #666;">CANCELAR</button>
+                    <button class="btn btn-gold" onclick="app.saveMovement()" style="flex: 1;">GUARDAR</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="modal-stock" class="modal hidden">
+            <div class="modal-content arqueo-dashboard">
+                <div class="arqueo-header">
+                    <h2 class="brand">Cierre de Caja</h2>
+                </div>
+
+                <div class="arqueo-body">
+                    <!-- Panel Izquierdo: Calculadora -->
+                    <div class="arqueo-calc-panel">
+                        <h3>Calculadora de Billetes (Gs)</h3>
+
+                        <div class="arqueo-tables-row">
+                            <!-- Billetes -->
+                            <div class="arqueo-table-col">
+                                <p class="table-title">Billetes</p>
+                                <table class="arqueo-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Denom</th>
+                                            <th>Cant</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bills-body"></tbody>
+                                </table>
+                            </div>
+                            <!-- Monedas -->
+                            <div class="arqueo-table-col">
+                                <p class="table-title">Monedas</p>
+                                <table class="arqueo-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Denom</th>
+                                            <th>Cant</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="coins-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="arqueo-total-bar">
+                            Total Caja: <span id="calc-total-display">0</span> Gs
+                        </div>
+                    </div>
+
+                    <!-- Panel Derecho: Movimientos -->
+                    <div class="arqueo-mov-panel">
+                        <h3>Registro Movimientos</h3>
+
+                        <div class="arqueo-mov-form">
+                            <input type="text" id="dash-mov-desc" placeholder="Descripción">
+                            <input type="number" id="dash-mov-amount" placeholder="Monto">
+                            <select id="dash-mov-type">
+                                <option value="ingreso">Ingreso</option>
+                                <option value="egreso">Egreso</option>
+                            </select>
+                            <button class="btn btn-gold" onclick="app.saveMovementDashboard()">Agregar</button>
+                        </div>
+
+                        <div id="dash-mov-list" class="arqueo-mov-list"></div>
+
+                        <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
+
+                        <div id="diff-container" class="arqueo-diff hidden">
+                            <div><span>TOTAL ESPERADO</span><span id="expected-cash-display">--</span></div>
+                            <div><span>DIFERENCIA</span><span id="diff-display">--</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arqueo-footer">
+                    <button class="btn btn-outline" style="border-color: #666; color: #ccc;"
+                        onclick="app.closeModal('modal-stock')">← VOLVER A VENTAS</button>
+                    <button class="btn btn-gold" onclick="app.closeShift()">Cerrar Caja</button>
+                </div>
+
+                <!-- Apertura fields (hidden by default) -->
+                <div id="opening-fields" class="hidden arqueo-opening">
+                    <h3 class="brand">Configuración de Apertura</h3>
+                    <div class="opening-grid">
+                        <div><label>Stock Masas</label><input type="number" id="init-stock" placeholder="0"></div>
+                        <div><label>Stock Bebidas</label><input type="number" id="init-stock-drinks" placeholder="0">
+                        </div>
+                    </div>
+                    <button class="btn btn-gold" style="width: 100%; margin-top: 15px;" onclick="app.setStock()">INICIAR
+                        TURNO</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR UPDATE (Add Close Session) -->
+        <style>
+            .cash-input-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                font-size: 0.9rem;
+            }
+
+            .cash-input-row input {
+                width: 80px;
+                margin-bottom: 0;
+                padding: 5px;
+                text-align: center;
+            }
+        </style>
+
+        <!-- Firebase SDKs (v8) -->
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+        <!-- Config -->
+        <script src="js/config.js"></script>
+
+        <!-- Main Logic -->
+        <script src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+{
+    "rules": {
+        "products": {
+            ".read": true,
+            ".write": "auth != null"
+        },
+        "stock": {
+            ".read": true,
+            ".write": "auth != null"
+        },
+        "orders": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+            "$orderId": {
+                // Validación de Schema Básico
+                ".validate": "newData.hasChildren(['id', 'total', 'customer']) && newData.child('total').isNumber() && newData.child('total').val() >= 0"
+            }
+        },
+        "movements": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        },
+        "clients": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        },
+        "config": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        }
+    }
+}

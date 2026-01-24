@@ -16,9 +16,16 @@ const configContent = `const CONFIG = {
 };`;
 
 // Escribir el archivo
+// Escribir el archivo en la carpeta original y en la v2_secured
 try {
     fs.writeFileSync('./js/config.js', configContent);
-    console.log('✅ js/config.js generado exitosamente con variables de entorno.');
+    console.log('✅ js/config.js (Legacy) generado exitosamente.');
+
+    // Asegurarse de que existe el directorio v2_secured
+    if (fs.existsSync('./v2_secured/js')) {
+        fs.writeFileSync('./v2_secured/js/config.js', configContent);
+        console.log('✅ v2_secured/js/config.js (Secured) generado exitosamente.');
+    }
 } catch (err) {
     console.error('❌ Error generando js/config.js:', err);
     process.exit(1);

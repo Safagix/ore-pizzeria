@@ -1,5 +1,5 @@
 {
   "buildCommand": "node generate_config.js",
-  "outputDirectory": ".",
+  "outputDirectory": "v2_secured",
   "framework": null
 }

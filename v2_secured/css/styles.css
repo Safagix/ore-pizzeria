@@ -1,0 +1,775 @@
+:root {
+    /* Palette: Ore Artesanal (Dark/Gold/Earthy) */
+    --bg-dark: #121212;
+    --bg-card: #1e1e1e;
+    --bg-panel: #252525;
+
+    --primary-gold: #c5a059;
+    /* Gold/Beige logo color */
+    --primary-hover: #b08d45;
+
+    --text-main: #f0f0f0;
+    --text-muted: #a0a0a0;
+
+    --success: #2e7d32;
+    /* Green for Paid */
+    --pending: #f57c00;
+    /* Orange for Sent/Unpaid */
+    --danger: #d32f2f;
+
+    --font-serif: 'Playfair Display', serif;
+    --font-sans: 'Lato', sans-serif;
+
+    --radius: 8px;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 1024px) {
+    body {
+        height: auto;
+        overflow: auto;
+    }
+}
+
+h1,
+h2,
+h3,
+.brand {
+    font-family: var(--font-serif);
+}
+
+/* --- UI Components --- */
+.hidden {
+    display: none !important;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-sans);
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn-gold {
+    background: var(--primary-gold);
+    color: #000;
+}
+
+.btn-gold:hover {
+    background: var(--primary-hover);
+}
+
+.btn-outline {
+    border: 1px solid var(--primary-gold);
+    background: transparent;
+    color: var(--primary-gold);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-pending {
+    background: var(--pending);
+    color: white;
+}
+
+input,
+select,
+textarea {
+    background: #333;
+    border: 1px solid #444;
+    color: white;
+    padding: 10px;
+    border-radius: var(--radius);
+    width: 100%;
+    margin-bottom: 10px;
+    font-family: var(--font-sans);
+}
+
+/* --- Screens --- */
+.screen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-dark);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+}
+
+/* LOGIN */
+#login-screen {
+    justify-content: center;
+    align-items: center;
+    background: url('https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+}
+
+.login-overlay {
+    background: rgba(0, 0, 0, 0.85);
+    position: absolute;
+    inset: 0;
+}
+
+.login-card {
+    position: relative;
+    z-index: 2;
+    background: var(--bg-card);
+    padding: 40px;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    border: 1px solid var(--primary-gold);
+    box-shadow: 0 0 20px rgba(197, 160, 89, 0.2);
+}
+
+.login-card input {
+    text-align: center;
+    font-size: 1.1rem;
+    padding: 12px;
+}
+
+.login-logo {
+    font-size: 3rem;
+    color: var(--primary-gold);
+    margin-bottom: 10px;
+}
+
+/* CASHIER */
+header {
+    height: 60px;
+    background: var(--bg-panel);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid #333;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-tab {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.nav-tab.active {
+    background: var(--primary-gold);
+    color: #000;
+    font-weight: bold;
+}
+
+.cashier-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    height: calc(100vh - 60px);
+}
+
+/* Builder Area */
+.builder-area {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Pizza Switch */
+.pizza-switch-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.switch-box {
+    background: #333;
+    padding: 5px;
+    border-radius: 30px;
+    display: flex;
+}
+
+.switch-opt {
+    padding: 10px 30px;
+    border-radius: 25px;
+    cursor: pointer;
+    color: #888;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.switch-opt.active {
+    background: var(--primary-gold);
+    color: #000;
+}
+
+/* Flavors Grid */
+.flavors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.flavor-card {
+    background: var(--bg-card);
+    padding: 15px;
+    border-radius: var(--radius);
+    text-align: center;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.flavor-card.selected {
+    border-color: var(--primary-gold);
+    background: rgba(197, 160, 89, 0.1);
+}
+
+/* Dashboard Tables */
+.dash-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.dash-table th {
+    text-align: left;
+    color: #888;
+    font-weight: normal;
+    padding: 10px;
+    border-bottom: 1px solid #1e2d3d;
+}
+
+.dash-table td {
+    padding: 8px 10px;
+}
+
+.dash-table input {
+    width: 60px;
+    padding: 5px;
+    background: #101c26;
+    border: 1px solid #1e2d3d;
+    color: white;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.dash-mov-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #1e2d3d;
+    font-size: 0.85rem;
+}
+
+.flavor-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #333;
+}
+
+/* Cart Sidebar */
+.cart-sidebar {
+    background: var(--bg-panel);
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.cart-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.cart-item {
+    background: #333;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.cart-item-title {
+    font-weight: bold;
+    color: var(--primary-gold);
+    margin-bottom: 4px;
+}
+
+.cart-item-desc {
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.btn-remove {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: var(--danger);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    /* Allow modal container to scroll */
+    padding: 20px 0;
+    /* Add space for scroll */
+}
+
+@media (max-width: 1024px) {
+    .modal {
+        align-items: flex-start;
+        /* Start from top on mobile */
+        padding-top: 20px;
+    }
+}
+
+.modal-content {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 500px;
+    border: 1px solid var(--primary-gold);
+}
+
+/* KITCHEN (CHEF) */
+.kitchen-board {
+    padding: 20px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    height: calc(100vh - 60px);
+}
+
+.ticket {
+    background: var(--bg-card);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.ticket.pending-pay {
+    border-color: var(--pending);
+}
+
+.ticket.paid {
+    border-color: var(--success);
+}
+
+.ticket.local-order {
+    background: #2a2a2a;
+    border-style: dashed;
+    border-width: 3px;
+    border-color: #5b9bd5 !important;
+}
+
+/* Blue dashed for Local */
+.ticket-header {
+    padding: 10px;
+    background: #333;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+}
+
+.ticket-body {
+    padding: 15px;
+    flex: 1;
+}
+
+.ticket-footer {
+    padding: 15px;
+}
+
+/* ADMIN */
+.admin-panel {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.stats-card {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    border-left: 5px solid var(--primary-gold);
+}
+
+/* Loader */
+#loader {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    transition: opacity 0.5s;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================
+   ARQUEO DASHBOARD - Responsive & Compact
+   ============================================ */
+.arqueo-dashboard {
+    max-width: 800px !important;
+    padding: 0 !important;
+    background: #0a1118 !important;
+    color: #fff;
+    border: 1px solid #1e2d3d !important;
+    font-size: 0.85rem;
+}
+
+.arqueo-header {
+    background: #101c26;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1e2d3d;
+}
+
+.arqueo-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.arqueo-body {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 0;
+}
+
+.arqueo-calc-panel {
+    padding: 15px;
+    border-right: 1px solid #1e2d3d;
+}
+
+.arqueo-calc-panel h3 {
+    color: #2196f3;
+    font-size: 0.95rem;
+    font-weight: normal;
+    margin-bottom: 10px;
+}
+
+.arqueo-tables-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.arqueo-table-col .table-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #888;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.arqueo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}
+
+.arqueo-table th {
+    text-align: left;
+    color: #666;
+    font-weight: normal;
+    padding: 4px;
+    border-bottom: 1px solid #1e2d3d;
+}
+
+.arqueo-table td {
+    padding: 3px 4px;
+}
+
+.arqueo-table input {
+    width: 40px;
+    padding: 4px;
+    background: #101c26;
+    border: 1px solid #1e2d3d;
+    color: white;
+    border-radius: 3px;
+    text-align: center;
+    font-size: 0.78rem;
+    margin-bottom: 0;
+}
+
+.arqueo-total-bar {
+    margin-top: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 8px;
+    background: #060a0f;
+    border-left: 3px solid #2196f3;
+}
+
+.arqueo-mov-panel {
+    padding: 15px;
+    background: #0d1721;
+    display: flex;
+    flex-direction: column;
+}
+
+.arqueo-mov-panel h3 {
+    color: #2196f3;
+    font-size: 0.95rem;
+    font-weight: normal;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.arqueo-mov-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.arqueo-mov-form input,
+.arqueo-mov-form select {
+    background: #101c26;
+    border: 1px solid #1e2d3d;
+    padding: 8px;
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+.arqueo-mov-form button {
+    padding: 8px;
+    font-size: 0.75rem;
+}
+
+.arqueo-mov-list {
+    flex: 1;
+    min-height: 0;
+    /* Critical for flex scrolling */
+    overflow-y: auto;
+    background: #060a0f;
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.btn-mov-delete {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 8px;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.btn-mov-delete:hover {
+    color: #d32f2f;
+}
+
+.arqueo-mov-summary {
+    margin-top: auto;
+    /* Push to bottom */
+    font-size: 0.8rem;
+    color: #888;
+    padding-top: 8px;
+    border-top: 1px solid #1e2d3d;
+}
+
+.arqueo-diff {
+    margin-top: 15px;
+    padding: 10px;
+    background: #060a0f;
+    border-radius: 4px;
+}
+
+.arqueo-diff>div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+}
+
+.arqueo-diff>div:last-child {
+    margin-bottom: 0;
+}
+
+.arqueo-diff span:last-child {
+    font-weight: bold;
+}
+
+.arqueo-footer {
+    padding: 12px 20px;
+    background: #101c26;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid #1e2d3d;
+}
+
+.arqueo-footer button {
+    flex: 1;
+    padding: 10px;
+    font-size: 0.85rem;
+}
+
+.arqueo-opening {
+    padding: 15px;
+    background: #101c26;
+}
+
+.arqueo-opening h3 {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+.opening-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.opening-grid label {
+    font-size: 0.75rem;
+    color: #888;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.opening-grid input {
+    margin-bottom: 0;
+}
+
+/* --- Responsivo: Tablet & Mobile (< 1024px) --- */
+@media (max-width: 1024px) {
+    .arqueo-dashboard {
+        max-width: 100% !important;
+        margin: 10px;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        /* Reset any fixed height constraints */
+        max-height: none !important;
+    }
+
+    .arqueo-body {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+        /* Let content grow naturally */
+    }
+
+    .arqueo-calc-panel {
+        border-right: none;
+        border-bottom: 1px solid #1e2d3d;
+    }
+
+    .arqueo-tables-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .arqueo-mov-list {
+        max-height: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .arqueo-tables-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .arqueo-table input {
+        width: 50px;
+    }
+
+    .arqueo-footer {
+        flex-direction: column;
+    }
+
+    .arqueo-footer button {
+        width: 100%;
+    }
+}
