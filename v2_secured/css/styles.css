@@ -389,12 +389,15 @@ header {
 /* KITCHEN (CHEF) - RESPONSIVE */
 .kitchen-board {
     padding: 15px;
+    padding-bottom: 120px;
+    /* Extra scroll space for mobile bar */
     overflow-y: auto;
     display: grid;
     /* Mobile First: 1 columna por defecto */
     grid-template-columns: 1fr;
     gap: 12px;
-    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
+    /* Dynamic Viewport Height */
 }
 
 /* Mobile Landscape (celular horizontal): 2 columnas */
@@ -811,5 +814,22 @@ header {
 
     .arqueo-footer button {
         width: 100%;
+    }
+}
+
+/* Mobile Touch Targets Improvements for Chef */
+@media (max-width: 768px) {
+    .ticket-footer .btn {
+        padding: 16px 20px !important;
+        /* Más área táctil */
+        font-size: 1.1rem !important;
+        /* Texto más grande */
+        font-weight: bold;
+        min-height: 50px;
+    }
+
+    .ticket-body {
+        font-size: 1.05rem;
+        /* Texto de pedido un poco más grande */
     }
 }
