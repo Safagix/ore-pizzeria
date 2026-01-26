@@ -44,6 +44,7 @@ const app = {
             this.fetchProducts();
             this.fetchClients();
             this.syncStock(); // Fix: Stock Sync (Vuln 5)
+            this.listenShopStatus(); // ✨ NEW: Listen for shift close events
 
             // Fix: Restore State (Vuln 4)
             this.loadLocalState();
@@ -58,6 +59,38 @@ const app = {
             alert("Error conectando a DB: " + e.message);
             loader.classList.add('hidden');
         }
+    },
+
+    // --- SYSTEM EVENTS ---
+    listenShopStatus: function () {
+        firebase.database().ref('config/shopStatus').on('value', snap => {
+            const data = snap.val();
+            if (data && data.status === 'closed') {
+                const now = Date.now();
+                // If the event happened in the last 60 seconds, trigger feedback
+                if (now - data.timestamp < 60000) {
+                    this.triggerGoodJob();
+                }
+            }
+        });
+    },
+
+    triggerGoodJob: function () {
+        if (!document.getElementById('modal-good-job').classList.contains('hidden')) return;
+
+        document.getElementById('modal-good-job').classList.remove('hidden');
+
+        let seconds = 5;
+        const timer = document.getElementById('shutdown-timer');
+        const interval = setInterval(() => {
+            seconds--;
+            if (timer) timer.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(interval);
+                localStorage.removeItem('ore_pos_state'); // Ensure clear
+                location.reload();
+            }
+        }, 1000);
     },
 
     // --- SECURITY & UTILS ---
@@ -400,6 +433,9 @@ const app = {
             drinks: d
         });
 
+        // Reset shop status to open
+        firebase.database().ref('config/shopStatus').set({ status: 'open', timestamp: Date.now() });
+
         this.updateStockUI();
         this.saveLocalState(); // Fix: Persist state
         document.getElementById('modal-stock').classList.add('hidden');
@@ -615,11 +651,22 @@ const app = {
 
                 Promise.all(archivePromises).then(() => {
                     console.log("✅ Pedidos archivados exitosamente");
-                    alert("Turno Cerrado. El informe se ha descargado.\n\nLos pedidos completados han sido archivados.");
-                    location.reload();
+
+                    // 1. Limpiar almacenamiento local para obligar a nueva apertura
+                    localStorage.removeItem('ore_pos_state');
+
+                    // 2. Notificar a TODOS (Cajero + Chef) que el turno cerró
+                    firebase.database().ref('config/shopStatus').set({
+                        status: 'closed',
+                        timestamp: Date.now()
+                    });
+
+                    // El listener 'listenShopStatus' mostrará el mensaje y recargará
+
                 }).catch(error => {
                     console.error("Error archivando pedidos:", error);
-                    alert("Turno Cerrado. El informe se ha descargado.\n\nAdvertencia: Algunos pedidos no pudieron archivarse.");
+                    alert("Error al cerrar: " + error.message);
+                    localStorage.removeItem('ore_pos_state');
                     location.reload();
                 });
             });
