@@ -878,20 +878,21 @@ header {
     }
 
     .ticket-header {
-        padding: 20px;
-        font-size: 1.3rem;
+        padding: 10px;
+        /* Borde verde más chico */
+        font-size: 1.25rem;
     }
 
     .ticket-footer {
-        padding: 20px;
+        padding: 15px;
     }
 
     .ticket-footer button {
         width: 100%;
-        padding: 25px !important;
-        /* Botón GIGANTE */
-        font-size: 1.5rem !important;
-        border-radius: 12px;
+        padding: 18px !important;
+        /* Botón un poco más chico pero eficiente */
+        font-size: 1.3rem !important;
+        border-radius: 10px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
     }
 }

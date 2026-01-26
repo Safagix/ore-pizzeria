@@ -1552,13 +1552,26 @@ const app = {
             const isLocal = o.type === 'Local';
             const isReady = o.status === 'ready';
 
-            let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
-            `).join('');
+            // Sort items: Pizza first
+            const items = (o.items || []).sort((a, b) => {
+                const typeA = a.type || 'other'; // fallback
+                const typeB = b.type || 'other';
+                // Pizza priority
+                if (typeA === 'pizza' && typeB !== 'pizza') return -1;
+                if (typeA !== 'pizza' && typeB === 'pizza') return 1;
+                return 0;
+            });
+
+            let itemsHtml = items.map(i => {
+                // Simplify text: "Pizza Mitad: X" -> "Mitad: X"
+                let displayName = i.name.replace(/Pizza Mitad:/gi, 'Mitad:');
+
+                return `<li>${displayName} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>`;
+            }).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
-                 style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
+                 style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 5px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
                     <span>#${o.id} - ${o.customer || 'S/N'}</span>
                     <span>${o.timestamp}</span>
