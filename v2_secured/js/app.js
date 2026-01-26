@@ -1015,7 +1015,10 @@ const app = {
         // Calculate price
         // Use dynamic products list
         const selectedObjs = APP_STATE.selectedFlavors.map(fid => APP_STATE.products.flavors.find(f => f.id === fid));
-        const price = Math.max(...selectedObjs.map(f => f.price));
+
+        // Fix: Average price for Half & Half (Request: (P1 + P2) / 2)
+        const totalPrice = selectedObjs.reduce((sum, f) => sum + f.price, 0);
+        const price = totalPrice / selectedObjs.length;
 
         const names = selectedObjs.map(f => f.name).join(' / ');
         const notes = document.getElementById('item-notes').value;
