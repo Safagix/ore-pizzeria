@@ -386,14 +386,37 @@ header {
     border: 1px solid var(--primary-gold);
 }
 
-/* KITCHEN (CHEF) */
+/* KITCHEN (CHEF) - RESPONSIVE */
 .kitchen-board {
     padding: 20px;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    /* Mobile First: 1 columna por defecto */
+    grid-template-columns: 1fr;
+    gap: 15px;
     height: calc(100vh - 60px);
+}
+
+/* Tablet: 2 columnas */
+@media (min-width: 768px) {
+    .kitchen-board {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+/* Desktop: 3 columnas */
+@media (min-width: 1024px) {
+    .kitchen-board {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Desktop Grande: 4 columnas */
+@media (min-width: 1440px) {
+    .kitchen-board {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
 .ticket {

@@ -592,8 +592,37 @@ const app = {
             const safeDate = new Date().toISOString().split('T')[0];
             link.download = `Cierre_Caja_${safeDate}.txt`;
             link.click();
-            alert("Turno Cerrado. El informe se ha descargado.");
-            location.reload();
+
+            // ✨ NUEVO: Archivar pedidos completados al cerrar caja
+            console.log("📦 Archivando pedidos completados...");
+            firebase.database().ref('orders').once('value', ordersSnap => {
+                const archivePromises = [];
+
+                ordersSnap.forEach(child => {
+                    const order = child.val();
+                    // Archivar solo pedidos completados y pagados
+                    if (order.status === 'completed' && order.payStatus === 'paid') {
+                        // Guardar en archivo histórico
+                        const archiveRef = firebase.database().ref(`orders_archive/${safeDate}/${child.key}`);
+                        archivePromises.push(
+                            archiveRef.set(order).then(() => {
+                                // Eliminar de pedidos activos
+                                return child.ref.remove();
+                            })
+                        );
+                    }
+                });
+
+                Promise.all(archivePromises).then(() => {
+                    console.log("✅ Pedidos archivados exitosamente");
+                    alert("Turno Cerrado. El informe se ha descargado.\n\nLos pedidos completados han sido archivados.");
+                    location.reload();
+                }).catch(error => {
+                    console.error("Error archivando pedidos:", error);
+                    alert("Turno Cerrado. El informe se ha descargado.\n\nAdvertencia: Algunos pedidos no pudieron archivarse.");
+                    location.reload();
+                });
+            });
         });
     },
 
