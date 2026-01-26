@@ -1244,11 +1244,16 @@ const app = {
             const data = snapshot.val();
             if (!data) {
                 APP_STATE.ordersCache = [];
+                this.updatePendingBadge(0);
                 return;
             }
 
             const orders = Object.entries(data).map(([key, value]) => ({ key, ...value }));
             APP_STATE.ordersCache = orders; // Store for local filtering
+
+            // Update pending orders badge (always, even if tab not visible)
+            const pendingCount = orders.filter(o => o.payStatus === 'pending' && o.status !== 'cancelled').length;
+            this.updatePendingBadge(pendingCount);
 
             // Re-render views if they are visible
             if (!document.getElementById('view-chef').classList.contains('hidden')) {
@@ -1285,21 +1290,28 @@ const app = {
             .reverse() // Most recent first within groups
             .slice(0, 15);
 
+        // Count pending orders for notification badge
+        const pendingCount = APP_STATE.ordersCache.filter(o => o.payStatus === 'pending' && o.status !== 'cancelled').length;
+        this.updatePendingBadge(pendingCount);
+
         sorted.forEach(o => {
             const canCancel = o.status === 'cooking';
             const canEdit = o.payStatus === 'pending';
+            const isPending = o.payStatus === 'pending';
 
             list.innerHTML += `
-                <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
-                    ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}</div>
+                <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; overflow: visible;">
+                    <div class="ticket-header" style="position: relative;">
+                        #${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}
+                        ${isPending ? '<span style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: linear-gradient(135deg, #ff9800, #f57c00); color: white; font-size: 0.65rem; padding: 3px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">⚠️ PENDIENTE</span>' : ''}
+                    </div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
                         Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : this.escapeHtml(o.status))}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" onclick="app.markPaid('${o.key}')">COBRAR</button>` : ''}
+                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" onclick="app.markPaid('${o.key}')">💰 COBRAR</button>` : ''}
                         ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" onclick="app.editOrder('${o.key}')">EDITAR</button>` : ''}
                         ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" onclick="app.cancelOrder('${o.key}')">ANULAR</button>` : ''}
                     </div>
@@ -1308,28 +1320,101 @@ const app = {
         });
     },
 
-    markPaid: function (key) {
-        const order = APP_STATE.ordersCache.find(o => o.key === key);
-        if (order && order.payStatus === 'pending') {
-            // Update shift stats
-            APP_STATE.shiftSales.total += (order.total || 0);
-            APP_STATE.shiftSales.deliveryFees += (order.deliveryFee || 0);
-            if (order.method === 'Efectivo') {
-                APP_STATE.shiftSales.efectivo += (order.total || 0) + (order.deliveryFee || 0);
-                APP_STATE.expectedCash += (order.total || 0) + (order.deliveryFee || 0);
-            } else {
-                APP_STATE.shiftSales.transfer += (order.total || 0) + (order.deliveryFee || 0);
-            }
-            // Add items to stats
-            if (order.items && Array.isArray(order.items)) {
-                order.items.forEach(i => {
-                    APP_STATE.shiftSales.items[i.name] = (APP_STATE.shiftSales.items[i.name] || 0) + 1;
-                });
-            }
-            // Update Firebase
-            APP_STATE.dbRef.child(key).update({ payStatus: 'paid' });
-            alert("Pedido marcado como COBRADO");
+    // Update notification badge on Enviados tab
+    updatePendingBadge: function (count) {
+        const badge = document.getElementById('pending-badge');
+        if (!badge) return;
+
+        if (count > 0) {
+            badge.textContent = count > 9 ? '9+' : count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
         }
+    },
+
+    markPaid: function (key) {
+        // Open change calculator modal instead of direct payment
+        this.openChangeModal(key);
+    },
+
+    // Open change calculator modal for payment
+    openChangeModal: function (key) {
+        const order = APP_STATE.ordersCache.find(o => o.key === key);
+        if (!order || order.payStatus !== 'pending') return;
+
+        APP_STATE._payingOrderKey = key;
+        const totalWithDelivery = (order.total || 0) + (order.deliveryFee || 0);
+
+        document.getElementById('change-order-info').textContent = `#${order.id} - ${order.customer || 'S/N'}`;
+        document.getElementById('change-total').textContent = `Gs. ${totalWithDelivery.toLocaleString()}`;
+        document.getElementById('change-pay-amount').value = '';
+        document.getElementById('change-result').textContent = 'Gs. 0';
+        document.getElementById('modal-change').classList.remove('hidden');
+
+        // Focus input for quick typing
+        setTimeout(() => document.getElementById('change-pay-amount').focus(), 100);
+    },
+
+    calculateModalChange: function () {
+        const order = APP_STATE.ordersCache.find(o => o.key === APP_STATE._payingOrderKey);
+        if (!order) return;
+
+        const totalWithDelivery = (order.total || 0) + (order.deliveryFee || 0);
+        const payAmount = parseInt(document.getElementById('change-pay-amount').value) || 0;
+        const change = payAmount - totalWithDelivery;
+
+        const changeEl = document.getElementById('change-result');
+        if (change >= 0) {
+            changeEl.textContent = `Gs. ${change.toLocaleString()}`;
+            changeEl.style.color = '#4caf50';
+        } else {
+            changeEl.textContent = `Gs. 0`;
+            changeEl.style.color = '#888';
+        }
+    },
+
+    confirmPayment: function () {
+        const key = APP_STATE._payingOrderKey;
+        const order = APP_STATE.ordersCache.find(o => o.key === key);
+        if (!order || order.payStatus !== 'pending') return;
+
+        // Update shift stats
+        APP_STATE.shiftSales.total += (order.total || 0);
+        APP_STATE.shiftSales.deliveryFees += (order.deliveryFee || 0);
+        if (order.method === 'Efectivo') {
+            APP_STATE.shiftSales.efectivo += (order.total || 0) + (order.deliveryFee || 0);
+            APP_STATE.expectedCash += (order.total || 0) + (order.deliveryFee || 0);
+        } else {
+            APP_STATE.shiftSales.transfer += (order.total || 0) + (order.deliveryFee || 0);
+        }
+        // Add items to stats
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(i => {
+                APP_STATE.shiftSales.items[i.name] = (APP_STATE.shiftSales.items[i.name] || 0) + 1;
+            });
+        }
+        // Update Firebase
+        APP_STATE.dbRef.child(key).update({ payStatus: 'paid' });
+
+        // Close modal and show confirmation
+        this.closeModal('modal-change');
+        APP_STATE._payingOrderKey = null;
+
+        // Show change to deliver
+        const payAmount = parseInt(document.getElementById('change-pay-amount').value) || 0;
+        const totalWithDelivery = (order.total || 0) + (order.deliveryFee || 0);
+        const change = payAmount - totalWithDelivery;
+
+        if (change > 0) {
+            alert(`✅ Pedido COBRADO\n\n💵 Entregar vuelto: Gs. ${change.toLocaleString()}`);
+        } else {
+            alert("✅ Pedido marcado como COBRADO");
+        }
+    },
+
+    closeModal: function (modalId) {
+        document.getElementById(modalId).classList.add('hidden');
     },
 
     editOrder: function (key) {
