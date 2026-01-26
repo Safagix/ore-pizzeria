@@ -65,10 +65,14 @@ const app = {
     listenShopStatus: function () {
         firebase.database().ref('config/shopStatus').on('value', snap => {
             const data = snap.val();
+            // Critical Fix: Only trigger feedback if user is currrently logged in
+            // This prevents the medal from appearing on the login screen after reload
+            if (!APP_STATE.role) return;
+
             if (data && data.status === 'closed') {
                 const now = Date.now();
-                // If the event happened in the last 60 seconds, trigger feedback
-                if (now - data.timestamp < 60000) {
+                // If the event happened in the last 20 seconds, trigger feedback
+                if (now - data.timestamp < 20000) {
                     this.triggerGoodJob();
                 }
             }
