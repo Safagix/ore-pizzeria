@@ -833,3 +833,74 @@ header {
         /* Texto de pedido un poco más grande */
     }
 }
+
+
+/* 🚀 REDISEÑO TOTAL MÓVIL CHEF: Horizontal Slider */
+@media (max-width: 820px) {
+    .kitchen-board {
+        display: flex !important;
+        /* Force Flex */
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        height: calc(100dvh - 70px);
+        padding: 20px 10px;
+        gap: 15px;
+        align-items: center;
+        /* Centrar tarjetas verticalmente */
+        /* Fondo oscuro para contraste */
+        background: linear-gradient(to bottom, #111, #000);
+    }
+
+    .ticket {
+        /* Portrait: Ver una grande y un pedacito */
+        min-width: 88vw;
+        max-width: 88vw;
+
+        height: 85vh;
+        /* Altura fija alta */
+        scroll-snap-align: center;
+        flex-shrink: 0;
+
+        border: 2px solid var(--primary-gold);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Scroll interno por si el ticket es eterno */
+    .ticket-body {
+        overflow-y: auto;
+        flex: 1;
+        font-size: 1.2rem;
+        padding: 20px;
+    }
+
+    .ticket-header {
+        padding: 20px;
+        font-size: 1.3rem;
+    }
+
+    .ticket-footer {
+        padding: 20px;
+    }
+
+    .ticket-footer button {
+        width: 100%;
+        padding: 25px !important;
+        /* Botón GIGANTE */
+        font-size: 1.5rem !important;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* Ajuste para celular horizontal: Ver 2 tarjetas */
+@media (max-width: 820px) and (orientation: landscape) {
+    .ticket {
+        min-width: 45vw;
+        max-width: 45vw;
+        height: 80vh;
+    }
+}
