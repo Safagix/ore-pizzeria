@@ -428,6 +428,8 @@ const app = {
             deliveryFees: 0,
             deliveryEfectivo: 0,
             deliveryTransfer: 0,
+            pizzaCash: 0,
+            drinkCash: 0,
             items: {}
         };
 
@@ -450,6 +452,11 @@ const app = {
         document.getElementById('modal-stock').classList.remove('hidden');
         document.getElementById('opening-fields').classList.remove('hidden');
         document.getElementById('diff-container').classList.add('hidden');
+
+        // Hide "Volver a Ventas" during opening (Force entry)
+        const btnBack = document.getElementById('btn-back-sales');
+        if (btnBack) btnBack.classList.add('hidden');
+
         document.getElementById('bills-body').closest('div').parentElement.style.display = 'grid'; // ensure 2 cols or grid
     },
 
@@ -457,7 +464,27 @@ const app = {
         document.getElementById('modal-stock').classList.remove('hidden');
         document.getElementById('opening-fields').classList.add('hidden');
         document.getElementById('diff-container').classList.remove('hidden');
-        document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
+
+        // Show "Volver a Ventas" during closing
+        const btnBack = document.getElementById('btn-back-sales');
+        if (btnBack) btnBack.classList.remove('hidden');
+
+        // Render Detailed Breakdown
+        const pizzaCash = APP_STATE.shiftSales.pizzaCash || 0;
+        const drinkCash = APP_STATE.shiftSales.drinkCash || 0;
+        const delivCash = APP_STATE.shiftSales.deliveryEfectivo || 0;
+        const petty = APP_STATE.pettyCash || 0;
+
+        document.getElementById('expected-cash-display').innerHTML = `
+            <div style="font-size:0.85rem; text-align:right; margin-top:5px; line-height:1.4; color:#ccc;">
+                Caja Chica (+Movs): <span style="color:white">Gs. ${petty.toLocaleString()}</span><br>
+                Venta Pizzas: <span style="color:white">Gs. ${pizzaCash.toLocaleString()}</span><br>
+                Venta Bebidas: <span style="color:white">Gs. ${drinkCash.toLocaleString()}</span><br>
+                Delivery: <span style="color:white">Gs. ${delivCash.toLocaleString()}</span><br>
+                <hr style="border-color:#444; margin:5px 0;">
+                <b style="font-size:1.2rem; color:var(--primary-gold)">TOTAL: Gs. ${APP_STATE.expectedCash.toLocaleString()}</b>
+            </div>
+        `;
 
         // Reset calculator
         document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
@@ -1436,6 +1463,22 @@ const app = {
         if (order.method === 'Efectivo') {
             APP_STATE.shiftSales.efectivo += (order.total || 0) + (order.deliveryFee || 0);
             APP_STATE.expectedCash += (order.total || 0) + (order.deliveryFee || 0);
+
+            // Track Delivery Cash
+            APP_STATE.shiftSales.deliveryEfectivo += (order.deliveryFee || 0);
+
+            // Track Pizza vs Drink Cash
+            let pCash = 0;
+            let dCash = 0;
+            if (order.items) {
+                order.items.forEach(i => {
+                    if (i.cat === 'flavors' || i.type === 'pizza') pCash += (i.price || 0);
+                    else dCash += (i.price || 0);
+                });
+            }
+            APP_STATE.shiftSales.pizzaCash = (APP_STATE.shiftSales.pizzaCash || 0) + pCash;
+            APP_STATE.shiftSales.drinkCash = (APP_STATE.shiftSales.drinkCash || 0) + dCash;
+
         } else {
             APP_STATE.shiftSales.transfer += (order.total || 0) + (order.deliveryFee || 0);
         }
