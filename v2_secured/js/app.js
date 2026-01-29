@@ -481,23 +481,62 @@ const app = {
     updateCloseShiftBreakdown: async function () {
         const stats = await this.getTodayBreakdown();
         document.getElementById('detail-petty-cash').textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
-        document.getElementById('detail-total-sales').textContent = `Gs. ${APP_STATE.shiftSales.total.toLocaleString()}`;
+
+        // Use DB Stats for reliability
+        document.getElementById('detail-total-sales').textContent = `Gs. ${stats.total.toLocaleString()}`;
         document.getElementById('detail-pizzas').textContent = `Gs. ${stats.pizza.toLocaleString()}`;
         document.getElementById('detail-drinks').textContent = `Gs. ${stats.drink.toLocaleString()}`;
-        document.getElementById('detail-delivery').textContent = `Gs. ${APP_STATE.shiftSales.deliveryFees.toLocaleString()}`;
+        document.getElementById('detail-delivery').textContent = `Gs. ${stats.delivery.toLocaleString()}`;
+
+        // Update Expected Cash based on DB Stats + Petty Cash
+        // Expected = Petty Cash + Cash Sales + Cash Delivery Fees - Expenses (handled in calc?)
+        // Expenses are shown as Difference if not subtracted. 
+        // But typically Expected Cash = Opening + Cash Incoming.
+        // Difference = Actual Cash - Expected Cash.
+        // If Expenses come from Cash, they reduce Actual Cash. So Expected should be Gross?
+        // No, typically Expected Cash should accounting for expenses if they are recorded.
+        // But here 'Total Esperado' usually means "What should be in the drawer if no expenses happened?" 
+        // OR "What should be in the drawer accounting for expenses?"
+        // The original logic:
+        // Suma Ventas + Dot (Gross)
+        // Ingresos Extra
+        // Egresos/Gastos
+        // EFECTIVO ESPERADO = (Gross + In - Out).
+
+        // We need to fetch Expenses to calculate Expected correctly here?
+        // closeShift does that logic.
+        // For this breakdown view, we might just show Gross Sales + Petty.
+        // And let "Diferencia" handle the expenses part?
+        // Or fetch expenses?
+        // Let's stick to showing reliable Sales.
+
+        const newExpected = APP_STATE.pettyCash + stats.efectivo;
+        document.getElementById('expected-cash-display').textContent = `Gs. ${newExpected.toLocaleString()}`;
+        // Note: This does NOT include expenses subtraction, so if expenses were made from cash, 
+        // "Total En Caja" will be higher than "Real Cash", leading to negative difference equal to expenses.
+        // This is standard Arqueo logic (Difference explains expenses).
     },
 
     getTodayBreakdown: async function () {
         const today = new Date().toLocaleDateString();
-        // Fetch snapshot if possible, or use logic. 
-        // Using firebase fetch for accuracy
         const snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
-        let pizza = 0, drink = 0;
+        let pizza = 0, drink = 0, delivery = 0, total = 0;
+        let efectivo = 0, transfer = 0;
+
         snap.forEach(c => {
             const o = c.val();
             if (o.payStatus === 'paid' && o.status !== 'cancelled') {
+                const orderTotal = (o.total || 0);
+                const orderDelivery = (o.deliveryFee || 0);
+                const fullAmount = orderTotal + orderDelivery;
+
+                total += fullAmount;
+                delivery += orderDelivery;
+
+                if (o.method === 'Efectivo') efectivo += fullAmount;
+                else transfer += fullAmount;
+
                 (o.items || []).forEach(i => {
-                    // Check type directly or via category
                     const isPizza = i.type === 'pizza' || i.cat === 'flavors';
                     const isDrink = i.type === 'drink' || i.cat === 'drinks';
                     if (isPizza) pizza += (i.price || 0);
@@ -505,7 +544,7 @@ const app = {
                 });
             }
         });
-        return { pizza, drink };
+        return { pizza, drink, delivery, total, efectivo, transfer };
     },
 
     saveMovementDashboard: function () {
@@ -640,41 +679,52 @@ const app = {
                 }
             });
 
+            // Fetch accurate stats from DB
+            const stats = await this.getTodayBreakdown();
+
+            // Recalculate Expected Cash based on DB Logic
+            // Petty Cash + Cash Sales (Includes Delivery Cash if method is Cash) + In - Out
+            // Note: Our DB loop sums 'total + delivery' into 'efectivo' if method is Cash.
+            // So stats.efectivo is the correct Gross Cash Inflow from Orders.
+            const calculatedExpected = APP_STATE.pettyCash + stats.efectivo + totalIn - totalOut;
+
             const report = `INFORME DE CIERRE DE CAJA\n` +
                 `=================================\n` +
                 `Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}\n` +
                 `---------------------------------\n` +
                 `Apertura (Dotación): Gs. ${APP_STATE.pettyCash.toLocaleString()}\n` +
-                `Ventas Efectivo:     Gs. ${APP_STATE.shiftSales.efectivo.toLocaleString()}\n` +
-                `Ventas Transfer:     Gs. ${APP_STATE.shiftSales.transfer.toLocaleString()}\n` +
+                `Ventas Efectivo:     Gs. ${stats.efectivo.toLocaleString()}\n` +
+                `Ventas Transfer:     Gs. ${stats.transfer.toLocaleString()}\n` +
                 `---------------------------------\n` +
-                `Suma Ventas + Dot:   Gs. ${(APP_STATE.shiftSales.efectivo + APP_STATE.pettyCash).toLocaleString()}\n` +
+                `Suma Ventas + Dot:   Gs. ${(stats.efectivo + APP_STATE.pettyCash).toLocaleString()}\n` +
                 `Ingresos Extra:      Gs. ${totalIn.toLocaleString()}\n` +
                 `Egresos/Gastos:      Gs. ${totalOut.toLocaleString()}\n` +
                 `---------------------------------\n` +
-                `EFECTIVO ESPERADO:   Gs. ${expected.toLocaleString()}\n` +
+                `EFECTIVO ESPERADO:   Gs. ${calculatedExpected.toLocaleString()}\n` +
                 `EFECTIVO CONTADO:    Gs. ${counted.toLocaleString()}\n` +
-                `DIFERENCIA:          Gs. ${(counted - expected).toLocaleString()}\n` +
+                `DIFERENCIA:          Gs. ${(counted - calculatedExpected).toLocaleString()}\n` +
                 `=================================\n\n` +
                 `DETALLE DELIVERY:\n` +
-                `- Total Delivery:    Gs. ${APP_STATE.shiftSales.deliveryFees.toLocaleString()}\n` +
-                `- En Efectivo:       Gs. ${APP_STATE.shiftSales.deliveryEfectivo.toLocaleString()}\n` +
-                `- Por Transferencia: Gs. ${APP_STATE.shiftSales.deliveryTransfer.toLocaleString()}\n\n` +
+                `- Total Delivery:    Gs. ${stats.delivery.toLocaleString()}\n\n` +
                 `MOVIMIENTOS DE CAJA:\n` +
                 (movs.length > 0 ?
                     movs.map(m => `[${m.type.toUpperCase()}] ${m.desc}: Gs. ${m.amount.toLocaleString()}`).join('\n') : "Sin movimientos registrados") +
                 `\n\nDETALLE DE PRODUCTOS VENDIDOS:\n` +
                 Object.entries(APP_STATE.shiftSales.items).map(([name, count]) => `- ${name}: ${count}`).join('\n');
 
-            // Add Detailed Breakdown to Report
-            const stats = await this.getTodayBreakdown();
-            report += `\n\nDESGLOSE DE VENTAS:\n` +
+            // Append Detailed Breakdown
+            // report += ... (Already part of the flow above? No, user wanted simplified detail on download too)
+            // But we already included detailed vars in the main block.
+            // We can add the specific Pizza vs Drink split.
+            const splitReport = `\n\nDESGLOSE DE VENTAS:\n` +
                 `- Ventas Pizzas:     Gs. ${stats.pizza.toLocaleString()}\n` +
                 `- Ventas Bebidas:    Gs. ${stats.drink.toLocaleString()}\n` +
-                `- Delivery Fees:     Gs. ${APP_STATE.shiftSales.deliveryFees.toLocaleString()}`;
+                `- Delivery Fees:     Gs. ${stats.delivery.toLocaleString()}`;
+
+            const finalReport = report + splitReport;
 
             // Download report
-            const blob = new Blob([report], { type: 'text/plain' });
+            const blob = new Blob([finalReport], { type: 'text/plain' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             const safeDate = new Date().toISOString().split('T')[0];
@@ -1185,7 +1235,11 @@ const app = {
         const safeCustomerName = this.escapeHtml(customerName);
 
         const orderType = document.getElementById('order-type').value;
-        const deliveryFee = orderType === 'Delivery' ? (parseInt(document.getElementById('delivery-fee').value) || 0) : 0;
+        // Fix: Explicitly force 0 if not Delivery to avoid UI glitches
+        let deliveryFee = 0;
+        if (orderType === 'Delivery') {
+            deliveryFee = parseInt(document.getElementById('delivery-fee').value) || 0;
+        }
         const paymentMethod = document.getElementById('payment-method').value;
 
         const isEditing = APP_STATE._editingOrderKey !== null;
