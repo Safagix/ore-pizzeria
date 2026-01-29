@@ -488,37 +488,23 @@ const app = {
         document.getElementById('detail-drinks').textContent = `Gs. ${stats.drink.toLocaleString()}`;
         document.getElementById('detail-delivery').textContent = `Gs. ${stats.delivery.toLocaleString()}`;
 
-        // Update Expected Cash based on DB Stats + Petty Cash
-        // Expected = Petty Cash + Cash Sales + Cash Delivery Fees - Expenses (handled in calc?)
-        // Expenses are shown as Difference if not subtracted. 
-        // But typically Expected Cash = Opening + Cash Incoming.
-        // Difference = Actual Cash - Expected Cash.
-        // If Expenses come from Cash, they reduce Actual Cash. So Expected should be Gross?
-        // No, typically Expected Cash should accounting for expenses if they are recorded.
-        // But here 'Total Esperado' usually means "What should be in the drawer if no expenses happened?" 
-        // OR "What should be in the drawer accounting for expenses?"
-        // The original logic:
-        // Suma Ventas + Dot (Gross)
-        // Ingresos Extra
-        // Egresos/Gastos
-        // EFECTIVO ESPERADO = (Gross + In - Out).
+        // New: Movements UI
+        document.getElementById('detail-income').textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
+        document.getElementById('detail-expense').textContent = `Gs. ${stats.movementsOut.toLocaleString()}`;
 
-        // We need to fetch Expenses to calculate Expected correctly here?
-        // closeShift does that logic.
-        // For this breakdown view, we might just show Gross Sales + Petty.
-        // And let "Diferencia" handle the expenses part?
-        // Or fetch expenses?
-        // Let's stick to showing reliable Sales.
+        // Correct Formula: 
+        // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
+        // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
+        const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
 
-        const newExpected = APP_STATE.pettyCash + stats.efectivo;
         document.getElementById('expected-cash-display').textContent = `Gs. ${newExpected.toLocaleString()}`;
-        // Note: This does NOT include expenses subtraction, so if expenses were made from cash, 
-        // "Total En Caja" will be higher than "Real Cash", leading to negative difference equal to expenses.
-        // This is standard Arqueo logic (Difference explains expenses).
+        APP_STATE.expectedCash = newExpected;
     },
 
     getTodayBreakdown: async function () {
         const today = new Date().toLocaleDateString();
+
+        // 1. Fetch Orders
         const snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
         let pizza = 0, drink = 0, delivery = 0, total = 0;
         let efectivo = 0, transfer = 0;
@@ -544,7 +530,25 @@ const app = {
                 });
             }
         });
-        return { pizza, drink, delivery, total, efectivo, transfer };
+
+        // 2. Fetch Movements (Expenses/Income)
+        // Note: Movements are stored with date property
+        // We scan all movements? IndexOn date is better.
+        // For now, scan all if dataset small, or query.
+        // Using existing pattern:
+        const snapMov = await firebase.database().ref('movements').once('value');
+        let movementsIn = 0;
+        let movementsOut = 0;
+
+        snapMov.forEach(c => {
+            const m = c.val();
+            if (m.date === today) {
+                if (m.type === 'ingreso') movementsIn += (m.amount || 0);
+                else movementsOut += (m.amount || 0);
+            }
+        });
+
+        return { pizza, drink, delivery, total, efectivo, transfer, movementsIn, movementsOut };
     },
 
     saveMovementDashboard: function () {
