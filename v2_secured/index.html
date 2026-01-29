@@ -505,15 +505,50 @@
 
                         <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
 
-                        <div id="diff-container" class="arqueo-diff hidden">
-                            <div><span>TOTAL ESPERADO</span><span id="expected-cash-display">--</span></div>
-                            <div><span>DIFERENCIA</span><span id="diff-display">--</span></div>
+                        <div id="diff-container" class="arqueo-diff hidden"
+                            style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px;">
+                            <div
+                                style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
+                                DETALLE ESPERADO</div>
+
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
+                                <span>Caja Chica (Inicio):</span><span id="detail-petty-cash">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
+                                <span>Total Ventas:</span><span id="detail-total-sales">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                <span>• Pizzas:</span><span id="detail-pizzas">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                <span>• Bebidas:</span><span id="detail-drinks">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                <span>• Delivery:</span><span id="detail-delivery">0</span>
+                            </div>
+
+                            <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
+
+                            <div
+                                style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
+                                <span>TOTAL EN CAJA:</span><span id="expected-cash-display"
+                                    style="color: var(--success);">--</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
+                                <span>DIFERENCIA:</span><span id="diff-display">--</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="arqueo-footer">
-                    <button id="btn-back-sales" class="btn btn-outline" style="border-color: #666; color: #ccc;"
+                    <button id="btn-cancel-opening" class="btn btn-outline" style="border-color: #666; color: #ccc;"
                         onclick="app.closeModal('modal-stock')">← VOLVER A VENTAS</button>
                     <button class="btn btn-gold" onclick="app.closeShift()">Cerrar Caja</button>
                 </div>

@@ -428,8 +428,6 @@ const app = {
             deliveryFees: 0,
             deliveryEfectivo: 0,
             deliveryTransfer: 0,
-            pizzaCash: 0,
-            drinkCash: 0,
             items: {}
         };
 
@@ -452,39 +450,22 @@ const app = {
         document.getElementById('modal-stock').classList.remove('hidden');
         document.getElementById('opening-fields').classList.remove('hidden');
         document.getElementById('diff-container').classList.add('hidden');
+        document.getElementById('bills-body').closest('div').parentElement.style.display = 'grid';
 
-        // Hide "Volver a Ventas" during opening (Force entry)
-        const btnBack = document.getElementById('btn-back-sales');
+        // Hide "Volver a Ventas" during opening to prevent bypass
+        const btnBack = document.getElementById('btn-cancel-opening');
         if (btnBack) btnBack.classList.add('hidden');
-
-        document.getElementById('bills-body').closest('div').parentElement.style.display = 'grid'; // ensure 2 cols or grid
     },
 
-    requestCloseShift: function () {
+    requestCloseShift: async function () {
         document.getElementById('modal-stock').classList.remove('hidden');
         document.getElementById('opening-fields').classList.add('hidden');
         document.getElementById('diff-container').classList.remove('hidden');
+        document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
 
         // Show "Volver a Ventas" during closing
-        const btnBack = document.getElementById('btn-back-sales');
+        const btnBack = document.getElementById('btn-cancel-opening');
         if (btnBack) btnBack.classList.remove('hidden');
-
-        // Render Detailed Breakdown
-        const pizzaCash = APP_STATE.shiftSales.pizzaCash || 0;
-        const drinkCash = APP_STATE.shiftSales.drinkCash || 0;
-        const delivCash = APP_STATE.shiftSales.deliveryEfectivo || 0;
-        const petty = APP_STATE.pettyCash || 0;
-
-        document.getElementById('expected-cash-display').innerHTML = `
-            <div style="font-size:0.85rem; text-align:right; margin-top:5px; line-height:1.4; color:#ccc;">
-                Caja Chica (+Movs): <span style="color:white">Gs. ${petty.toLocaleString()}</span><br>
-                Venta Pizzas: <span style="color:white">Gs. ${pizzaCash.toLocaleString()}</span><br>
-                Venta Bebidas: <span style="color:white">Gs. ${drinkCash.toLocaleString()}</span><br>
-                Delivery: <span style="color:white">Gs. ${delivCash.toLocaleString()}</span><br>
-                <hr style="border-color:#444; margin:5px 0;">
-                <b style="font-size:1.2rem; color:var(--primary-gold)">TOTAL: Gs. ${APP_STATE.expectedCash.toLocaleString()}</b>
-            </div>
-        `;
 
         // Reset calculator
         document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
@@ -492,6 +473,39 @@ const app = {
 
         // Load movements
         this.renderMovementsDashboard();
+
+        // Calculate and Show Breakdown
+        this.updateCloseShiftBreakdown();
+    },
+
+    updateCloseShiftBreakdown: async function () {
+        const stats = await this.getTodayBreakdown();
+        document.getElementById('detail-petty-cash').textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
+        document.getElementById('detail-total-sales').textContent = `Gs. ${APP_STATE.shiftSales.total.toLocaleString()}`;
+        document.getElementById('detail-pizzas').textContent = `Gs. ${stats.pizza.toLocaleString()}`;
+        document.getElementById('detail-drinks').textContent = `Gs. ${stats.drink.toLocaleString()}`;
+        document.getElementById('detail-delivery').textContent = `Gs. ${APP_STATE.shiftSales.deliveryFees.toLocaleString()}`;
+    },
+
+    getTodayBreakdown: async function () {
+        const today = new Date().toLocaleDateString();
+        // Fetch snapshot if possible, or use logic. 
+        // Using firebase fetch for accuracy
+        const snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
+        let pizza = 0, drink = 0;
+        snap.forEach(c => {
+            const o = c.val();
+            if (o.payStatus === 'paid' && o.status !== 'cancelled') {
+                (o.items || []).forEach(i => {
+                    // Check type directly or via category
+                    const isPizza = i.type === 'pizza' || i.cat === 'flavors';
+                    const isDrink = i.type === 'drink' || i.cat === 'drinks';
+                    if (isPizza) pizza += (i.price || 0);
+                    if (isDrink) drink += (i.price || 0);
+                });
+            }
+        });
+        return { pizza, drink };
     },
 
     saveMovementDashboard: function () {
@@ -613,7 +627,7 @@ const app = {
         }
 
         const todayStr = new Date().toLocaleDateString();
-        firebase.database().ref('movements').once('value', snap => {
+        firebase.database().ref('movements').once('value', async snap => {
             const movs = [];
             let totalIn = 0;
             let totalOut = 0;
@@ -651,6 +665,13 @@ const app = {
                     movs.map(m => `[${m.type.toUpperCase()}] ${m.desc}: Gs. ${m.amount.toLocaleString()}`).join('\n') : "Sin movimientos registrados") +
                 `\n\nDETALLE DE PRODUCTOS VENDIDOS:\n` +
                 Object.entries(APP_STATE.shiftSales.items).map(([name, count]) => `- ${name}: ${count}`).join('\n');
+
+            // Add Detailed Breakdown to Report
+            const stats = await this.getTodayBreakdown();
+            report += `\n\nDESGLOSE DE VENTAS:\n` +
+                `- Ventas Pizzas:     Gs. ${stats.pizza.toLocaleString()}\n` +
+                `- Ventas Bebidas:    Gs. ${stats.drink.toLocaleString()}\n` +
+                `- Delivery Fees:     Gs. ${APP_STATE.shiftSales.deliveryFees.toLocaleString()}`;
 
             // Download report
             const blob = new Blob([report], { type: 'text/plain' });
@@ -1463,22 +1484,6 @@ const app = {
         if (order.method === 'Efectivo') {
             APP_STATE.shiftSales.efectivo += (order.total || 0) + (order.deliveryFee || 0);
             APP_STATE.expectedCash += (order.total || 0) + (order.deliveryFee || 0);
-
-            // Track Delivery Cash
-            APP_STATE.shiftSales.deliveryEfectivo += (order.deliveryFee || 0);
-
-            // Track Pizza vs Drink Cash
-            let pCash = 0;
-            let dCash = 0;
-            if (order.items) {
-                order.items.forEach(i => {
-                    if (i.cat === 'flavors' || i.type === 'pizza') pCash += (i.price || 0);
-                    else dCash += (i.price || 0);
-                });
-            }
-            APP_STATE.shiftSales.pizzaCash = (APP_STATE.shiftSales.pizzaCash || 0) + pCash;
-            APP_STATE.shiftSales.drinkCash = (APP_STATE.shiftSales.drinkCash || 0) + dCash;
-
         } else {
             APP_STATE.shiftSales.transfer += (order.total || 0) + (order.deliveryFee || 0);
         }
