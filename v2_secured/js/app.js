@@ -1139,7 +1139,22 @@ const app = {
         document.body.removeChild(link);
     },
 
+    // --- ADMIN SIDEBAR NAVIGATION ---
+    switchAdminTab: function (tabName) {
+        // Handle Sidebar Active State
+        document.querySelectorAll('.admin-menu-item').forEach(el => el.classList.remove('active'));
 
+        if (tabName === 'dashboard') {
+            document.getElementById('menu-dash').classList.add('active');
+            document.getElementById('admin-main-area').classList.remove('hidden');
+            document.getElementById('admin-products-area').classList.add('hidden');
+            this.loadAdminStats(); // Refresh stats
+        } else if (tabName === 'products') {
+            document.getElementById('menu-prod').classList.add('active');
+            document.getElementById('admin-main-area').classList.add('hidden');
+            document.getElementById('admin-products-area').classList.remove('hidden');
+        }
+    },
 
     // --- HELPER: Format Guaraníes ---
     formatGs: function (num) {
