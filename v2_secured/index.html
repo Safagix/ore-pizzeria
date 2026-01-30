@@ -238,31 +238,101 @@
             <div class="kitchen-board" id="chef-board"></div>
         </div>
 
-        <!-- ADMIN VIEW -->
+        <!-- ADMIN VIEW (PREMIUM DASHBOARD 2.0) -->
         <div id="view-admin" class="content-view hidden">
-            <div class="admin-panel">
-                <h1 class="brand" style="color: var(--primary-gold); margin-bottom: 20px;">Panel Administrativo</h1>
+            <div class="admin-grid">
+                <!-- Sidebar -->
+                <aside class="admin-sidebar">
+                    <div style="text-align: center; padding: 10px 0 20px 0; border-bottom: 1px solid #333;">
+                        <h2 class="brand" style="margin: 0; color: var(--primary-gold);">ORE</h2>
+                        <small style="color: #666; letter-spacing: 2px; font-size: 0.7rem;">MANAGEMENT PRO</small>
+                    </div>
 
-                <!-- Admin Navigation Tabs -->
-                <div
-                    style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
-                    <button class="nav-tab active" onclick="app.switchAdminTab('productos')" id="admin-tab-productos"
-                        style="padding: 10px 20px; background: var(--primary-gold); border: none; color: black; border-radius: 5px 5px 0 0; font-weight: bold; cursor: pointer;">🍕
-                        Productos</button>
-                    <button class="nav-tab" onclick="app.switchAdminTab('stats')" id="admin-tab-stats"
-                        style="padding: 10px 20px; background: #333; border: none; color: white; border-radius: 5px 5px 0 0; cursor: pointer;">📊
-                        Estadísticas</button>
-                    <button class="nav-tab" onclick="app.switchAdminTab('reportes')" id="admin-tab-reportes"
-                        style="padding: 10px 20px; background: #333; border: none; color: white; border-radius: 5px 5px 0 0; cursor: pointer;">📁
-                        Reportes</button>
-                </div>
+                    <div class="admin-menu-item active" id="menu-dash" onclick="app.switchAdminTab('dashboard')">
+                        📊 Dashboard
+                    </div>
+                    <div class="admin-menu-item" id="menu-prod" onclick="app.switchAdminTab('products')">
+                        🍕 Productos
+                    </div>
+                    <div class="admin-menu-item" onclick="app.logout()">
+                        🚪 Cerrar Sesión
+                    </div>
+                </aside>
 
-                <!-- TAB: Productos -->
-                <div id="admin-content-productos" class="admin-tab-content">
-                    <div class="stats-card" style="margin-bottom: 30px;">
-                        <h3>Gestión de Productos</h3>
-                        <p style="color: #aaa; margin: 10px 0;">Agrega nuevos sabores o bebidas al menú.</p>
+                <!-- Main Content -->
+                <main class="admin-content" id="admin-main-area">
+                    <!-- Dynamic Content Injected Here via app.js (renderAdminDashboard) -->
+                    <!-- Initial State (Loading or Dashboard) -->
+                    <div class="admin-header-bar">
+                        <h2 style="font-family: var(--font-serif); margin: 0;">Panel General</h2>
+                        <div class="date-filter-group">
+                            <select id="admin-period-select" onchange="app.loadAdminStats()"
+                                style="width: auto; margin:0; background: #222; border: 1px solid #444; color:white;">
+                                <option value="today">📅 Hoy</option>
+                                <option value="week">📅 Esta Semana</option>
+                                <option value="month">📅 Este Mes</option>
+                                <option value="year">📅 Este Año</option>
+                            </select>
+                            <button class="btn btn-gold" style="padding: 10px 15px; font-size: 0.9rem;"
+                                onclick="app.exportAdminReport()">
+                                💾 Exportar CSV
+                            </button>
+                        </div>
+                    </div>
 
+                    <!-- KPI Cards -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <h3>Ingresos Totales</h3>
+                            <div class="kpi-value" id="kpi-total">Gs. 0</div>
+                            <div class="kpi-sub positive">Ventas Brutas</div>
+                        </div>
+                        <div class="kpi-card">
+                            <h3>Ventas Netas</h3>
+                            <div class="kpi-value" id="kpi-net">Gs. 0</div>
+                            <div class="kpi-sub">Total - Gastos</div>
+                        </div>
+                        <div class="kpi-card">
+                            <h3>Pedidos</h3>
+                            <div class="kpi-value" id="kpi-orders">0</div>
+                            <div class="kpi-sub" id="kpi-orders-breakdown">0 Pizzas | 0 Bebidas</div>
+                        </div>
+                        <div class="kpi-card">
+                            <h3>Ticket Promedio</h3>
+                            <div class="kpi-value" id="kpi-ticket">Gs. 0</div>
+                            <div class="kpi-sub">Por pedido</div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Split -->
+                    <div class="reports-split">
+                        <!-- Left: Cash Breakdown -->
+                        <div class="report-panel">
+                            <div class="panel-header">
+                                <div class="panel-title">📃 Desglose Financiero</div>
+                            </div>
+                            <div id="admin-cash-breakdown">
+                                <p style="color:#666; text-align:center">Cargando datos...</p>
+                            </div>
+                        </div>
+
+                        <!-- Right: Visual Stats -->
+                        <div class="report-panel">
+                            <div class="panel-header">
+                                <div class="panel-title">🔥 Top Productos</div>
+                            </div>
+                            <div id="visual-stats-list">
+                                <!-- Bars inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- Products View (Hidden Container) -->
+                <div id="admin-products-area" class="admin-content hidden">
+                    <h2 class="brand" style="margin-bottom: 20px;">Gestión de Productos</h2>
+                    <div class="stats-card">
+                        <h3>Agregar Nuevo</h3>
                         <div style="display: grid; gap: 10px; text-align: left;">
                             <select id="prod-category"
                                 style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
@@ -285,98 +355,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- TAB: Estadísticas -->
-                <div id="admin-content-stats" class="admin-tab-content hidden">
-                    <div class="stats-card" style="margin-bottom: 30px;">
-                        <h3>📊 Dashboard de Estadísticas</h3>
-
-                        <!-- Today's Cash -->
-                        <div
-                            style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px; border-radius: 10px; margin: 15px 0;">
-                            <h4 style="color: #aaa; margin: 0 0 10px;">Arqueo del Día</h4>
-                            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; color: #888;">Efectivo</span>
-                                    <div id="admin-cash-efectivo"
-                                        style="font-size: 1.5rem; color: #4caf50; font-weight: bold;">Gs. 0</div>
-                                </div>
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; color: #888;">Transferencia</span>
-                                    <div id="admin-cash-transfer"
-                                        style="font-size: 1.5rem; color: #2196f3; font-weight: bold;">Gs. 0</div>
-                                </div>
-                                <div style="text-align: center;">
-                                    <span style="font-size: 0.9rem; color: #888;">TOTAL</span>
-                                    <div id="admin-cash-total"
-                                        style="font-size: 1.8rem; color: var(--primary-gold); font-weight: bold;">Gs. 0
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sales Counters -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <!-- Pizzas -->
-                            <div style="background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center;">
-                                <span style="font-size: 2rem;">🍕</span>
-                                <h4 style="margin: 5px 0; color: #dac0a3;">Pizzas Vendidas</h4>
-                                <div id="admin-pizza-count" style="font-size: 2rem; font-weight: bold; color: white;">0
-                                </div>
-                                <select id="admin-pizza-period" onchange="app.loadAdminStats()"
-                                    style="margin-top: 10px; padding: 5px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;">
-                                    <option value="day">Hoy</option>
-                                    <option value="month">Este Mes</option>
-                                    <option value="year">Este Año</option>
-                                </select>
-                            </div>
-                            <!-- Drinks -->
-                            <div style="background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center;">
-                                <span style="font-size: 2rem;">🥤</span>
-                                <h4 style="margin: 5px 0; color: #dac0a3;">Bebidas Vendidas</h4>
-                                <div id="admin-drink-count" style="font-size: 2rem; font-weight: bold; color: white;">0
-                                </div>
-                                <select id="admin-drink-period" onchange="app.loadAdminStats()"
-                                    style="margin-top: 10px; padding: 5px; background: #333; border: 1px solid #555; color: white; border-radius: 5px;">
-                                    <option value="day">Hoy</option>
-                                    <option value="month">Este Mes</option>
-                                    <option value="year">Este Año</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: Reportes -->
-                <div id="admin-content-reportes" class="admin-tab-content hidden">
-                    <div class="stats-card">
-                        <h3>Reporte de Ventas</h3>
-                        <p style="color: #aaa; margin: 10px 0;">Selecciona un rango de fechas para extraer y limpiar
-                            datos.
-                        </p>
-
-                        <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
-                            <div>
-                                <label style="display: block; color: #888; font-size: 0.8rem;">Desde:</label>
-                                <input type="date" id="admin-date-start"
-                                    style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
-                            </div>
-                            <div>
-                                <label style="display: block; color: #888; font-size: 0.8rem;">Hasta:</label>
-                                <input type="date" id="admin-date-end"
-                                    style="padding: 10px; background: #222; border: 1px solid #444; color: white;">
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-gold" style="flex: 1;" onclick="app.exportExcel(false)">EXTRAER
-                                (.XLSX)</button>
-                            <button class="btn" style="flex: 1; background: #d32f2f; color: white; border: none;"
-                                onclick="app.exportExcel(true)">EXTRAER Y LIMPIAR</button>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
 

@@ -971,124 +971,175 @@ const app = {
         }
     },
 
-    // --- ADMIN STATISTICS ---
-    loadAdminStats: function () {
-        const pizzaPeriod = document.getElementById('admin-pizza-period').value;
-        const drinkPeriod = document.getElementById('admin-drink-period').value;
-        const needsHistory = pizzaPeriod !== 'day' || drinkPeriod !== 'day';
+    // --- ADMIN STATISTICS (PREMIUM 2.0) ---
+    // Helper: Generate Firebase Push ID from Timestamp for Range Queries
+    generatePushID: function (timestamp) {
+        const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+        let now = timestamp;
+        const timeStampChars = new Array(8);
+        for (let i = 7; i >= 0; i--) {
+            timeStampChars[i] = PUSH_CHARS.charAt(now % 64);
+            now = Math.floor(now / 64);
+        }
+        return timeStampChars.join('');
+    },
 
-        const today = new Date();
-        const todayStr = today.toLocaleDateString(); // "DD/MM/YYYY" format depends on locale, ensure consistency in app
+    loadAdminStats: async function () {
+        const period = document.getElementById('admin-period-select').value;
+        const kpiContainer = document.querySelector('.kpi-grid');
+        const listContainer = document.getElementById('visual-stats-list');
 
-        let query = APP_STATE.dbRef;
+        // UI Loading State
+        if (kpiContainer) kpiContainer.style.opacity = '0.5';
 
-        // OPTIMIZATION: If only showing "Today", do NOT fetch all history.
-        if (!needsHistory) {
-            // Requires .indexOn: ["date"] in Firebase Rules
-            query = APP_STATE.dbRef.orderByChild('date').equalTo(todayStr);
-            console.log("⚡ Cargando estadísticas optimizadas (Solo Hoy)");
-        } else {
-            console.warn("🐌 Cargando historial completo (Mes/Año seleccionado)...");
+        // Define Time Range
+        const now = new Date();
+        let startTime, endTime;
+
+        if (period === 'today') {
+            startTime = new Date(now.setHours(0, 0, 0, 0)).getTime();
+            endTime = new Date(now.setHours(23, 59, 59, 999)).getTime();
+        } else if (period === 'week') {
+            const day = now.getDay() || 7;
+            if (day !== 1) now.setHours(-24 * (day - 1));
+            startTime = new Date(now.setHours(0, 0, 0, 0)).getTime();
+            endTime = new Date().getTime();
+        } else if (period === 'month') {
+            startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            endTime = new Date().getTime();
+        } else if (period === 'year') {
+            startTime = new Date(now.getFullYear(), 0, 1).getTime();
+            endTime = new Date().getTime();
         }
 
-        query.once('value', snap => {
-            const currentMonth = today.getMonth();
-            const currentYear = today.getFullYear();
+        console.log(`📡 Admin Stats: ${period}`);
 
-            let cashEfectivo = 0;
-            let cashTransfer = 0;
-            let pizzaCountDay = 0, pizzaCountMonth = 0, pizzaCountYear = 0;
-            let drinkCountDay = 0, drinkCountMonth = 0, drinkCountYear = 0;
+        const startKey = this.generatePushID(startTime) + '-0000000000000000000';
+        const endKey = this.generatePushID(endTime) + '-zzzzzzzzzzzzzzzzzzz';
 
-            snap.forEach(c => {
-                const o = c.val();
-                if (!o.date || !o.items) return;
+        try {
+            const snap = await APP_STATE.dbRef.orderByKey().startAt(startKey).endAt(endKey).once('value');
 
-                // Parse order date
-                const [d, m, y] = o.date.split('/');
-                const orderDate = new Date(y, m - 1, d);
-                const isToday = o.date === todayStr;
-                const isThisMonth = orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
-                const isThisYear = orderDate.getFullYear() === currentYear;
+            let totalSales = 0, netSales = 0, deliveryFees = 0, ordersCount = 0;
+            let paymentMethods = { 'Efectivo': 0, 'Transferencia': 0 };
+            let statsPizza = 0, statsDrink = 0;
+            let productCounts = {};
 
-                // Only count paid orders
-                if (o.payStatus !== 'paid') return;
+            APP_STATE.adminReportData = [];
 
-                // Today's cash (Always needed for the Cash Cards)
-                // NOTE: If we are in "Today Only" mode, 'snap' only contains today's orders, so we sums work naturally.
-                // If we are in "History" mode, we must filter isToday.
-                if (isToday) {
-                    if (o.method === 'Efectivo') cashEfectivo += (o.total || 0);
-                    else cashTransfer += (o.total || 0);
+            snap.forEach(child => {
+                const o = child.val();
+                if (o.status === 'cancelled') return;
+
+                if (o.payStatus === 'paid') {
+                    const orderTotal = (o.total || 0);
+                    const orderDelivery = (o.deliveryFee || 0);
+                    const fullAmount = orderTotal + orderDelivery;
+
+                    totalSales += fullAmount;
+                    deliveryFees += orderDelivery;
+                    ordersCount++;
+
+                    if (o.method === 'Efectivo') paymentMethods['Efectivo'] += fullAmount;
+                    else paymentMethods['Transferencia'] += fullAmount;
                 }
 
-                // Count items
-                // If optimization is ON, snap contains only Today. 
-                // So isThisMonth/Year will be true for these items too (Today is in this month), 
-                // but we won't have *past* items. This is acceptable as the UI asked for "Today" ONLY.
-                // If optimization is OFF, snap contains everything, loops over all.
-                o.items.forEach(item => {
-                    if (item.type === 'pizza') {
-                        if (isToday) pizzaCountDay++;
-                        if (isThisMonth) pizzaCountMonth++;
-                        if (isThisYear) pizzaCountYear++;
-                    } else if (item.type === 'drink') {
-                        if (isToday) drinkCountDay++;
-                        if (isThisMonth) drinkCountMonth++;
-                        if (isThisYear) drinkCountYear++;
-                    }
+                if (o.items) {
+                    o.items.forEach(i => {
+                        if (i.type === 'pizza') statsPizza++;
+                        else if (i.type === 'drink') statsDrink++;
+                        const name = i.name || "Unknown";
+                        productCounts[name] = (productCounts[name] || 0) + 1;
+                    });
+                }
+
+                APP_STATE.adminReportData.push({
+                    id: o.id,
+                    date: o.date,
+                    time: o.timestamp,
+                    customer: o.customer,
+                    total: o.total,
+                    delivery: o.deliveryFee,
+                    method: o.method,
+                    status: o.payStatus,
+                    items: o.items ? o.items.map(i => i.name).join(' + ') : ''
                 });
             });
 
-            // Update UI - Cash
-            document.getElementById('admin-cash-efectivo').textContent = `Gs. ${cashEfectivo.toLocaleString()}`;
-            document.getElementById('admin-cash-transfer').textContent = `Gs. ${cashTransfer.toLocaleString()}`;
-            document.getElementById('admin-cash-total').textContent = `Gs. ${(cashEfectivo + cashTransfer).toLocaleString()}`;
+            // Fetch Movements
+            const movSnap = await firebase.database().ref('movements').orderByKey().startAt(startKey).endAt(endKey).once('value');
+            let expenses = 0, extraIncome = 0;
 
-            // Update UI - Pizza count
-            let pizzaDisplay = pizzaPeriod === 'day' ? pizzaCountDay : (pizzaPeriod === 'month' ? pizzaCountMonth : pizzaCountYear);
-            document.getElementById('admin-pizza-count').textContent = pizzaDisplay;
+            movSnap.forEach(m => {
+                const mov = m.val();
+                if (mov.type === 'ingreso') extraIncome += (mov.amount || 0);
+                else if (mov.type === 'gasto' || mov.type === 'retiro') expenses += (mov.amount || 0);
+            });
 
-            // Update UI - Drink count
-            let drinkDisplay = drinkPeriod === 'day' ? drinkCountDay : (drinkPeriod === 'month' ? drinkCountMonth : drinkCountYear);
-            document.getElementById('admin-drink-count').textContent = drinkDisplay;
+            netSales = totalSales + extraIncome - expenses;
+            const avgTicket = ordersCount > 0 ? (totalSales / ordersCount) : 0;
 
-            if (needsHistory && snap.numChildren() > 2000) {
-                alert("⚠️ Aviso: Tienes muchos pedidos históricos. Se recomienda usar 'Reportes > Extraer y Limpiar' para mantener la velocidad.");
+            // UI Updates
+            if (document.getElementById('kpi-total')) {
+                document.getElementById('kpi-total').textContent = this.formatGs(totalSales);
+                document.getElementById('kpi-net').textContent = this.formatGs(netSales);
+                document.getElementById('kpi-orders').textContent = ordersCount;
+                document.getElementById('kpi-orders-breakdown').textContent = `${statsPizza} Pizzas | ${statsDrink} Bebidas`;
+                document.getElementById('kpi-ticket').textContent = this.formatGs(Math.round(avgTicket));
+
+                const breakdownHTML = `
+                    <div class="breakdown-row"><span>Ventas Efectivo</span><span style="color:#4caf50">${this.formatGs(paymentMethods['Efectivo'])}</span></div>
+                    <div class="breakdown-row"><span>Ventas Transferencia</span><span style="color:#2196f3">${this.formatGs(paymentMethods['Transferencia'])}</span></div>
+                    <div class="breakdown-row"><span>Delivery Fees</span><span>${this.formatGs(deliveryFees)}</span></div>
+                    <div class="breakdown-row" style="color:var(--success)"><span>+ Ingresos Extra</span><span>${this.formatGs(extraIncome)}</span></div>
+                    <div class="breakdown-row" style="color:var(--danger)"><span>- Gastos / Retiros</span><span>${this.formatGs(expenses)}</span></div>
+                    <div class="breakdown-row total"><span>Beneficio Neto</span><span style="color:var(--primary-gold)">${this.formatGs(netSales)}</span></div>
+                `;
+                document.getElementById('admin-cash-breakdown').innerHTML = breakdownHTML;
+
+                const sortedProducts = Object.entries(productCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                let visualHTML = '';
+                if (sortedProducts.length === 0) visualHTML = '<p style="text-align:center; color:#666; padding:20px;">Sin datos aún...</p>';
+                else {
+                    const maxCount = sortedProducts[0][1];
+                    sortedProducts.forEach(([name, count]) => {
+                        const percent = (count / maxCount) * 100;
+                        visualHTML += `
+                            <div class="visual-bar-item">
+                                <div class="visual-header"><span>${name}</span><span>${count}</span></div>
+                                <div class="visual-track"><div class="visual-fill" style="width: ${percent}%;"></div></div>
+                            </div>`;
+                    });
+                }
+                document.getElementById('visual-stats-list').innerHTML = visualHTML;
             }
+
+        } catch (e) {
+            console.error(e);
+            alert("Error: " + e.message);
+        } finally {
+            if (kpiContainer) kpiContainer.style.opacity = '1';
+        }
+    },
+
+    exportAdminReport: function () {
+        if (!APP_STATE.adminReportData || APP_STATE.adminReportData.length === 0) return alert("No hay datos para exportar.");
+
+        let csvContent = "data:text/csv;charset=utf-8,ID,Fecha,Hora,Cliente,Total,Delivery,Metodo,Estado,Items\n";
+        APP_STATE.adminReportData.forEach(row => {
+            csvContent += `${row.id},${row.date},${row.time},${row.customer},${row.total},${row.delivery},${row.method},${row.status},${row.items}\n`;
         });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Reporte_Admin_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     },
 
-    // --- ADMIN TABS NAVIGATION ---
-    switchAdminTab: function (tabName) {
-        // Hide all admin tab contents
-        document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
 
-        // Show selected tab
-        document.getElementById('admin-content-' + tabName).classList.remove('hidden');
-
-        // Update tab button styles
-        document.getElementById('admin-tab-productos').style.background = '#333';
-        document.getElementById('admin-tab-productos').style.color = 'white';
-        document.getElementById('admin-tab-productos').style.fontWeight = 'normal';
-
-        document.getElementById('admin-tab-stats').style.background = '#333';
-        document.getElementById('admin-tab-stats').style.color = 'white';
-        document.getElementById('admin-tab-stats').style.fontWeight = 'normal';
-
-        document.getElementById('admin-tab-reportes').style.background = '#333';
-        document.getElementById('admin-tab-reportes').style.color = 'white';
-        document.getElementById('admin-tab-reportes').style.fontWeight = 'normal';
-
-        // Highlight active tab
-        const activeTab = document.getElementById('admin-tab-' + tabName);
-        activeTab.style.background = 'var(--primary-gold)';
-        activeTab.style.color = 'black';
-        activeTab.style.fontWeight = 'bold';
-
-        // Load stats when switching to stats tab
-        if (tabName === 'stats') this.loadAdminStats();
-    },
 
     // --- HELPER: Format Guaraníes ---
     formatGs: function (num) {
