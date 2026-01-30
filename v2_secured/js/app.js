@@ -307,21 +307,47 @@ const app = {
         let counted = 0;
 
         document.querySelectorAll('.cash-calc').forEach(i => {
-            counted += (parseInt(i.dataset.val) * (parseInt(i.value) || 0));
+            const val = parseInt(i.dataset.val);
+            const count = parseInt(i.value) || 0;
+            const rowTotal = count * val;
+
+            // Restore: Update row total display
+            const totalCell = document.getElementById(`total-${val}`);
+            if (totalCell) totalCell.textContent = rowTotal.toLocaleString();
+
+            counted += rowTotal;
         });
 
         // Save total for Logic
         APP_STATE._currentCalcTotal = counted;
 
-        const display = document.getElementById('calc-total-display');
-        // Update Difference if in closing dashboard
-        const diffContainer = document.getElementById('diff-container');
-        if (diffContainer && !diffContainer.classList.contains('hidden')) {
-            const expected = APP_STATE.expectedCash;
-            const diff = grandTotal - expected;
-            const diffDisplay = document.getElementById('diff-display');
-            diffDisplay.textContent = `Gs. ${diff.toLocaleString()}`;
-            diffDisplay.style.color = diff < 0 ? '#f44336' : (diff > 0 ? '#4caf50' : '#fff');
+        document.getElementById('calc-total-display').textContent = `Total Caja: ${counted.toLocaleString()} Gs`;
+
+        const diff = counted - expected;
+        const diffEl = document.getElementById('diff-display');
+        // const diffLabel = diffEl.previousElementSibling; // The label span
+
+        // Use span for label if parent struct allows, otherwise just update text
+        let labelHtml = '';
+        let valueColor = '';
+        let valueText = '';
+
+        if (diff === 0) {
+            labelHtml = 'RESULTADO:';
+            valueColor = 'var(--success)';
+            valueText = 'PERFECTO (Gs. 0)';
+        } else if (diff < 0) {
+            labelHtml = 'FALTANTE (Dinero perdido):';
+            valueColor = '#f44336';
+            valueText = `Gs. ${diff.toLocaleString()}`;
+        } else {
+            labelHtml = 'SOBRANTE (Dinero extra):';
+            valueColor = 'var(--success)';
+            valueText = `+ Gs. ${diff.toLocaleString()}`;
+        }
+
+        if (diffEl.parentElement) {
+            diffEl.parentElement.innerHTML = `<span>${labelHtml}</span><span id="diff-display" style="color:${valueColor}; font-weight:bold;">${valueText}</span>`;
         }
     },
 
@@ -490,16 +516,32 @@ const app = {
         // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
         // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
         const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
-
         document.getElementById('expected-cash-display').textContent = `Gs. ${newExpected.toLocaleString()}`;
         APP_STATE.expectedCash = newExpected;
     },
 
+    // --- UTILS ---
+    getFormattedDate: function (dateObj = new Date()) {
+        // Force dd/mm/yyyy format regardless of browser locale
+        const d = dateObj.getDate().toString().padStart(2, '0');
+        const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const y = dateObj.getFullYear();
+        return `${d}/${m}/${y}`;
+    },
+
     getTodayBreakdown: async function () {
-        const today = new Date().toLocaleDateString();
+        const today = this.getFormattedDate();
+        console.log("Fetching stats for:", today);
 
         // 1. Fetch Orders
-        const snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
+        let snap;
+        try {
+            snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
+        } catch (e) {
+            console.error("DB Error fetching orders:", e);
+            return { pizza: 0, drink: 0, delivery: 0, total: 0, efectivo: 0, transfer: 0, movementsIn: 0, movementsOut: 0 };
+        }
+
         let pizza = 0, drink = 0, delivery = 0, total = 0;
         let efectivo = 0, transfer = 0;
 
@@ -526,21 +568,21 @@ const app = {
         });
 
         // 2. Fetch Movements (Expenses/Income)
-        // Note: Movements are stored with date property
-        // We scan all movements? IndexOn date is better.
-        // For now, scan all if dataset small, or query.
-        // Using existing pattern:
-        const snapMov = await firebase.database().ref('movements').once('value');
         let movementsIn = 0;
         let movementsOut = 0;
 
-        snapMov.forEach(c => {
-            const m = c.val();
-            if (m.date === today) {
-                if (m.type === 'ingreso') movementsIn += (m.amount || 0);
-                else movementsOut += (m.amount || 0);
-            }
-        });
+        try {
+            const snapMov = await firebase.database().ref('movements').once('value');
+            snapMov.forEach(c => {
+                const m = c.val();
+                if (m.date === today) {
+                    if (m.type === 'ingreso') movementsIn += (m.amount || 0);
+                    else movementsOut += (m.amount || 0);
+                }
+            });
+        } catch (e) {
+            console.error("DB Error fetching movements:", e);
+        }
 
         return { pizza, drink, delivery, total, efectivo, transfer, movementsIn, movementsOut };
     },
@@ -558,7 +600,7 @@ const app = {
             amount: amount,
             desc: desc,
             timestamp: new Date().toLocaleTimeString(),
-            date: new Date().toLocaleDateString(),
+            date: this.getFormattedDate(),
             user: APP_STATE.role || "CASHIER"
         };
 
@@ -586,7 +628,7 @@ const app = {
     renderMovementsDashboard: function () {
         const container = document.getElementById('dash-mov-list');
         const summary = document.getElementById('dash-mov-summary');
-        const todayStr = new Date().toLocaleDateString();
+        const todayStr = this.getFormattedDate();
 
         firebase.database().ref('movements').once('value', snap => {
             let html = '';
@@ -688,7 +730,7 @@ const app = {
 
             const report = `INFORME DE CIERRE DE CAJA\n` +
                 `=================================\n` +
-                `Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}\n` +
+                `Fecha: ${this.getFormattedDate()} - ${new Date().toLocaleTimeString()}\n` +
                 `---------------------------------\n` +
                 `Apertura (Dotación): Gs. ${APP_STATE.pettyCash.toLocaleString()}\n` +
                 `Ventas Efectivo:     Gs. ${stats.efectivo.toLocaleString()}\n` +
@@ -936,7 +978,7 @@ const app = {
         const needsHistory = pizzaPeriod !== 'day' || drinkPeriod !== 'day';
 
         const today = new Date();
-        const todayStr = today.toLocaleDateString(); // "DD/MM/YYYY" format depends on locale, ensure consistency in app
+        const todayStr = this.getFormattedDate(today); // "DD/MM/YYYY" format depends on locale, ensure consistency in app
 
         let query = APP_STATE.dbRef;
 
@@ -1320,7 +1362,7 @@ const app = {
                     payStatus: payStatus,
                     status: 'cooking',
                     timestamp: new Date().toLocaleTimeString(),
-                    date: new Date().toLocaleDateString()
+                    date: this.getFormattedDate()
                 };
 
                 // IF EDITING & COOKING -> UPDATE ORIGINAL
