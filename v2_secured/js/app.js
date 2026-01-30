@@ -530,7 +530,7 @@ const app = {
     },
 
     getTodayBreakdown: async function () {
-        const today = this.getFormattedDate();
+        const today = new Date().toLocaleDateString();
         console.log("Fetching stats for:", today);
 
         // 1. Fetch Orders
@@ -600,7 +600,7 @@ const app = {
             amount: amount,
             desc: desc,
             timestamp: new Date().toLocaleTimeString(),
-            date: this.getFormattedDate(),
+            date: new Date().toLocaleDateString(),
             user: APP_STATE.role || "CASHIER"
         };
 
@@ -628,7 +628,7 @@ const app = {
     renderMovementsDashboard: function () {
         const container = document.getElementById('dash-mov-list');
         const summary = document.getElementById('dash-mov-summary');
-        const todayStr = this.getFormattedDate();
+        const todayStr = new Date().toLocaleDateString();
 
         firebase.database().ref('movements').once('value', snap => {
             let html = '';
@@ -730,7 +730,7 @@ const app = {
 
             const report = `INFORME DE CIERRE DE CAJA\n` +
                 `=================================\n` +
-                `Fecha: ${this.getFormattedDate()} - ${new Date().toLocaleTimeString()}\n` +
+                `Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}\n` +
                 `---------------------------------\n` +
                 `Apertura (Dotación): Gs. ${APP_STATE.pettyCash.toLocaleString()}\n` +
                 `Ventas Efectivo:     Gs. ${stats.efectivo.toLocaleString()}\n` +
@@ -978,7 +978,7 @@ const app = {
         const needsHistory = pizzaPeriod !== 'day' || drinkPeriod !== 'day';
 
         const today = new Date();
-        const todayStr = this.getFormattedDate(today); // "DD/MM/YYYY" format depends on locale, ensure consistency in app
+        const todayStr = today.toLocaleDateString(); // "DD/MM/YYYY" format depends on locale, ensure consistency in app
 
         let query = APP_STATE.dbRef;
 
@@ -1316,106 +1316,93 @@ const app = {
         const pizzasCount = itemsToSend.filter(i => i.type === 'pizza').length;
         const drinksCount = itemsToSend.filter(i => i.type === 'drink').length;
 
-        // --- STOCK TRANSACTION (Vuln 5) ---
-        // Instead of verifying local stock, we try to decrement in DB.
-        const stockRef = firebase.database().ref('stock');
+        // --- STOCK TRANSACTION REMOVED (Reverting to "As Before" per user request) ---
+        // We will do optimistic local check or simple one-time check if needed, 
+        // but primarily we just process the order to ensure UX flow works.
 
-        stockRef.transaction(currentStock => {
-            if (!currentStock) return currentStock; // Abort if no stock data
-
-            if (currentStock.masas < pizzasCount || currentStock.drinks < drinksCount) {
-                // Abort transaction - Not enough stock
-                return;
-            }
-
-            // Decrement
-            return {
-                masas: currentStock.masas - pizzasCount,
-                drinks: currentStock.drinks - drinksCount
+        // Create Order Object
+        const self = this;
+        this.getNextId(function (seqId) {
+            const newOrder = {
+                id: isEditing ? (editingOrder.status === 'ready' ? `${editingOrder.id}-B` : editingOrder.id) : seqId,
+                customer: safeCustomerName,
+                items: itemsToSend,
+                total: itemsToSend.reduce((sum, i) => sum + i.price, 0),
+                deliveryFee: deliveryFee,
+                type: orderType,
+                method: paymentMethod,
+                payStatus: payStatus,
+                status: 'cooking',
+                timestamp: new Date().toLocaleTimeString(),
+                date: new Date().toLocaleDateString()
             };
-        }, (error, committed, snapshot) => {
-            if (error) {
-                return alert("Error de conexión al verificar stock");
-            }
-            if (!committed) {
-                // Transaction failed means NOT ENOUGH STOCK
-                // (Because we returned undefined/null in the update function when check failed)
-                return alert("¡STOCK INSUFICIENTE EN SERVIDOR! Otro cajero pudo haber vendido el último producto.");
-            }
 
-            // --- IF COMMITTED, PROCEED TO CREATE ORDER ---
-            // Update local UI immediately (optimistic)
-            APP_STATE.stock = snapshot.val().masas;
-            APP_STATE.stockDrinks = snapshot.val().drinks;
-            this.updateStockUI();
-
-            const self = this;
-            this.getNextId(function (seqId) {
-                const newOrder = {
-                    id: isEditing ? (editingOrder.status === 'ready' ? `${editingOrder.id}-B` : editingOrder.id) : seqId,
-                    customer: safeCustomerName,
-                    items: itemsToSend,
-                    total: itemsToSend.reduce((sum, i) => sum + i.price, 0),
+            // IF EDITING & COOKING -> UPDATE ORIGINAL
+            if (isEditing && editingOrder.status === 'cooking') {
+                APP_STATE.dbRef.child(APP_STATE._editingOrderKey).update({
+                    items: newOrder.items,
+                    total: newOrder.total,
                     deliveryFee: deliveryFee,
                     type: orderType,
                     method: paymentMethod,
-                    payStatus: payStatus,
-                    status: 'cooking',
-                    timestamp: new Date().toLocaleTimeString(),
-                    date: this.getFormattedDate()
-                };
-
-                // IF EDITING & COOKING -> UPDATE ORIGINAL
-                if (isEditing && editingOrder.status === 'cooking') {
-                    APP_STATE.dbRef.child(APP_STATE._editingOrderKey).update({
-                        items: newOrder.items,
-                        total: newOrder.total,
-                        deliveryFee: deliveryFee,
-                        type: orderType,
-                        method: paymentMethod,
-                        payStatus: payStatus
-                    }, (err) => {
-                        if (!err) {
-                            alert("Pedido Actualizado");
-                            self.resetCart();
-                        }
-                    });
-                    return;
-                }
-
-                // TRACK SHIFT STATS
-                if (payStatus === 'paid') {
-                    APP_STATE.shiftSales.total += newOrder.total;
-                    APP_STATE.shiftSales.deliveryFees += deliveryFee;
-
-                    if (newOrder.method === 'Efectivo') {
-                        APP_STATE.shiftSales.efectivo += newOrder.total + deliveryFee;
-                        APP_STATE.deliveryEfectivo += deliveryFee; // Correct attr
-                        APP_STATE.expectedCash += newOrder.total + deliveryFee;
-                    } else {
-                        APP_STATE.shiftSales.transfer += newOrder.total + deliveryFee;
-                    }
-
-                    // Fix: Persist State (Vuln 4)
-                    self.saveLocalState();
-                }
-
-                // Push to Firebase
-                APP_STATE.dbRef.push(newOrder, function (error) {
-                    if (error) {
-                        alert("Error al enviar: " + error.message);
-                    } else {
-                        alert(`Pedido Enviado (${payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'})`);
-
-                        // AUTO-SAVE CLIENT IF NEW
-                        const isNew = !APP_STATE.clients.some(c => c.name.toLowerCase() === safeCustomerName.toLowerCase());
-                        if (isNew && safeCustomerName.toLowerCase() !== 'ocasional') {
-                            firebase.database().ref('clients').push({ name: safeCustomerName });
-                        }
-
+                    payStatus: payStatus
+                }, (err) => {
+                    if (!err) {
+                        alert("Pedido Actualizado");
                         self.resetCart();
                     }
                 });
+                return;
+            }
+
+            // TRACK SHIFT STATS
+            if (payStatus === 'paid') {
+                APP_STATE.shiftSales.total += newOrder.total;
+                APP_STATE.shiftSales.deliveryFees += deliveryFee;
+
+                if (newOrder.method === 'Efectivo') {
+                    APP_STATE.shiftSales.efectivo += newOrder.total + deliveryFee;
+                    APP_STATE.deliveryEfectivo += deliveryFee;
+                    APP_STATE.expectedCash += newOrder.total + deliveryFee;
+                } else {
+                    APP_STATE.shiftSales.transfer += newOrder.total + deliveryFee;
+                }
+
+                self.saveLocalState();
+            }
+
+            // Push to Firebase
+            APP_STATE.dbRef.push(newOrder, function (error) {
+                if (error) {
+                    alert("Error al enviar: " + error.message);
+                } else {
+                    alert(`Pedido Enviado (${payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'})`);
+
+                    // DECREMENT STOCK (Post-order, optimistic)
+                    const stockRef = firebase.database().ref('stock');
+                    stockRef.transaction(current => {
+                        if (!current) return;
+                        const pizzasCount = itemsToSend.filter(i => i.type === 'pizza').length;
+                        const drinksCount = itemsToSend.filter(i => i.type === 'drink').length;
+                        return {
+                            masas: (current.masas || 0) - pizzasCount,
+                            drinks: (current.drinks || 0) - drinksCount
+                        };
+                    });
+
+                    // Update Local UI
+                    APP_STATE.stock -= itemsToSend.filter(i => i.type === 'pizza').length;
+                    APP_STATE.stockDrinks -= itemsToSend.filter(i => i.type === 'drink').length;
+                    self.updateStockUI();
+
+                    // AUTO-SAVE CLIENT
+                    const isNew = !APP_STATE.clients.some(c => c.name.toLowerCase() === safeCustomerName.toLowerCase());
+                    if (isNew && safeCustomerName.toLowerCase() !== 'ocasional') {
+                        firebase.database().ref('clients').push({ name: safeCustomerName });
+                    }
+
+                    self.resetCart();
+                }
             });
         });
     },
