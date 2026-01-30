@@ -303,23 +303,17 @@ const app = {
     },
 
     updateDashTotal: function () {
-        const inputs = document.querySelectorAll('.cash-calc');
-        let grandTotal = 0;
+        const expected = APP_STATE.expectedCash;
+        let counted = 0;
 
-        inputs.forEach(i => {
-            const count = parseInt(i.value) || 0;
-            const val = parseInt(i.getAttribute('data-val'));
-            const rowTotal = count * val;
-            grandTotal += rowTotal;
-
-            const totalCell = document.getElementById(`total-${val}`);
-            if (totalCell) totalCell.textContent = rowTotal.toLocaleString();
+        document.querySelectorAll('.cash-calc').forEach(i => {
+            counted += (parseInt(i.dataset.val) * (parseInt(i.value) || 0));
         });
 
-        const display = document.getElementById('calc-total-display');
-        if (display) display.textContent = grandTotal.toLocaleString();
-        APP_STATE._currentCalcTotal = grandTotal;
+        // Save total for Logic
+        APP_STATE._currentCalcTotal = counted;
 
+        const display = document.getElementById('calc-total-display');
         // Update Difference if in closing dashboard
         const diffContainer = document.getElementById('diff-container');
         if (diffContainer && !diffContainer.classList.contains('hidden')) {
