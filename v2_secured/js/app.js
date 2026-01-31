@@ -54,11 +54,35 @@ const app = {
 
             this.initCalculator();
             this.initFileInputListener();
+
+            // M3 FIX: Auto-save shift state every 30 seconds
+            setInterval(() => this.saveLocalState(), 30000);
         } catch (e) {
             console.error(e);
-            alert("Error conectando a DB: " + e.message);
+            this.showToast('Error conectando a DB', 'error');
             loader.classList.add('hidden');
         }
+    },
+
+    // --- TOAST NOTIFICATION SYSTEM (M1 FIX) ---
+    showToast: function (message, type = 'info') {
+        // Remove existing toast
+        const existing = document.getElementById('app-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'app-toast';
+        toast.style.cssText = `
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            padding: 12px 24px; border-radius: 8px; z-index: 9999;
+            font-weight: bold; animation: fadeIn 0.3s;
+            background: ${type === 'error' ? '#d32f2f' : type === 'success' ? '#2e7d32' : '#333'};
+            color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.remove(), 3000);
     },
 
     // --- SYSTEM EVENTS ---
@@ -149,14 +173,20 @@ const app = {
     },
 
     syncStock: function () {
-        // Fix: Real-time stock sync (Vuln 5)
+        // Fix: Real-time stock sync (Vuln 5) + M2 FIX: Multi-device notifications
         firebase.database().ref('stock').on('value', snap => {
             const s = snap.val();
             if (s) {
+                const prevStock = APP_STATE.stock;
                 APP_STATE.stock = s.masas || 0;
                 APP_STATE.stockDrinks = s.drinks || 0;
                 this.updateStockUI();
                 this.saveLocalState();
+
+                // M2 FIX: Notify if stock changed externally
+                if (APP_STATE.role && prevStock !== 0 && prevStock !== APP_STATE.stock) {
+                    this.showToast(`📦 Stock actualizado: ${APP_STATE.stock} masas`, 'info');
+                }
             }
         });
     },
@@ -371,27 +401,21 @@ const app = {
         const role = document.getElementById('role-select').value;
         const pin = document.getElementById('login-pin').value;
 
-        if (!role) return alert("Selecciona un rol");
-        if (!pin) return alert("Ingresa el PIN");
+        if (!role) return this.showToast('Selecciona un rol', 'error');
+        if (!pin) return this.showToast('Ingresa el PIN', 'error');
 
-        // Fix: Hashed Credentials (Vuln 1)
-        // 1234 -> 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4
-        // 0000 -> 9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0
-        // admin123 -> 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
-        // 1111 -> 0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172
-
+        // Security: Hashed credentials (no plaintext)
         const HASHES = {
             'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
-            'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0', // 0000
-            'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', // admin123
-            'service': '0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172' // 1111
+            'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0',
+            'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
+            'service': '0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172'
         };
 
         const pinHash = await this.hashPin(pin);
 
         if (pinHash !== HASHES[role]) {
-            console.log("Hash mismatch:", pinHash); // Debug only
-            return alert("PIN Incorrecto");
+            return this.showToast('PIN Incorrecto', 'error');
         }
 
         APP_STATE.role = role;
@@ -670,11 +694,12 @@ const app = {
     },
 
     deleteMovement: function (key, type, amount) {
-        if (!confirm("¿Eliminar este movimiento?")) return;
+        // M1 FIX: Better confirmation with amount display
+        if (!confirm(`¿Eliminar ${type} de Gs. ${amount.toLocaleString()}?`)) return;
 
         firebase.database().ref('movements').child(key).remove((error) => {
             if (error) {
-                alert("Error al eliminar: " + error.message);
+                this.showToast('Error al eliminar: ' + error.message, 'error');
             } else {
                 // Reverse the effect on expected cash
                 if (type === 'ingreso') {
@@ -961,6 +986,13 @@ const app = {
     },
 
     toggleDeliveryFee: function () {
+        // M4 FIX: Validate cart has items before showing delivery options
+        if (APP_STATE.cart.length === 0) {
+            this.showToast('Agrega productos primero', 'error');
+            document.getElementById('order-type').value = 'Para Comer Acá';
+            return;
+        }
+
         const type = document.getElementById('order-type').value;
         const container = document.getElementById('delivery-fee-container');
         if (type === 'Delivery') {
