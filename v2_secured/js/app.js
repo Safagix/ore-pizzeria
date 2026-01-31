@@ -575,23 +575,32 @@ const app = {
 
     getTodayBreakdown: async function () {
         const today = new Date().toLocaleDateString();
-        console.log("Fetching stats for:", today);
 
-        // 1. Fetch Orders
-        let snap;
-        try {
-            snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
-        } catch (e) {
-            console.error("DB Error fetching orders:", e);
-            return { pizza: 0, drink: 0, delivery: 0, total: 0, efectivo: 0, transfer: 0, movementsIn: 0, movementsOut: 0 };
+        // Use local cache if available, otherwise fetch all orders (no index needed)
+        let orders = [];
+
+        if (APP_STATE.ordersCache && APP_STATE.ordersCache.length > 0) {
+            // Use cached orders (already filtered by limitToLast(50) in listener)
+            orders = APP_STATE.ordersCache;
+        } else {
+            // Fallback: Fetch recent orders without orderByChild (no index needed)
+            try {
+                const snap = await firebase.database().ref('orders').limitToLast(100).once('value');
+                snap.forEach(c => {
+                    orders.push({ key: c.key, ...c.val() });
+                });
+            } catch (e) {
+                console.error("DB Error fetching orders:", e);
+                return { pizza: 0, drink: 0, delivery: 0, total: 0, efectivo: 0, transfer: 0, movementsIn: 0, movementsOut: 0 };
+            }
         }
 
         let pizza = 0, drink = 0, delivery = 0, total = 0;
         let efectivo = 0, transfer = 0;
 
-        snap.forEach(c => {
-            const o = c.val();
-            if (o.payStatus === 'paid' && o.status !== 'cancelled') {
+        // Filter by today's date in memory (faster, no index needed)
+        orders.forEach(o => {
+            if (o.date === today && o.payStatus === 'paid' && o.status !== 'cancelled') {
                 const orderTotal = (o.total || 0);
                 const orderDelivery = (o.deliveryFee || 0);
                 const fullAmount = orderTotal + orderDelivery;
@@ -611,7 +620,7 @@ const app = {
             }
         });
 
-        // 2. Fetch Movements (Expenses/Income)
+        // 2. Fetch Movements (Expenses/Income) - no index needed
         let movementsIn = 0;
         let movementsOut = 0;
 
