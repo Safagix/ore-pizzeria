@@ -1141,18 +1141,169 @@ const app = {
 
     // --- ADMIN SIDEBAR NAVIGATION ---
     switchAdminTab: function (tabName) {
-        // Handle Sidebar Active State
         document.querySelectorAll('.admin-menu-item').forEach(el => el.classList.remove('active'));
 
         if (tabName === 'dashboard') {
             document.getElementById('menu-dash').classList.add('active');
             document.getElementById('admin-main-area').classList.remove('hidden');
             document.getElementById('admin-products-area').classList.add('hidden');
-            this.loadAdminStats(); // Refresh stats
+            document.getElementById('admin-db-area').classList.add('hidden');
+            this.loadAdminStats();
         } else if (tabName === 'products') {
             document.getElementById('menu-prod').classList.add('active');
             document.getElementById('admin-main-area').classList.add('hidden');
             document.getElementById('admin-products-area').classList.remove('hidden');
+            document.getElementById('admin-db-area').classList.add('hidden');
+        } else if (tabName === 'db') {
+            document.getElementById('menu-db').classList.add('active');
+            document.getElementById('admin-main-area').classList.add('hidden');
+            document.getElementById('admin-products-area').classList.add('hidden');
+            document.getElementById('admin-db-area').classList.remove('hidden');
+            this.checkDBHealth();
+        }
+    },
+
+    // --- DB MAINTENANCE (PRO V2) ---
+    checkDBHealth: async function () {
+        // Count entries in background
+        const snap = await APP_STATE.dbRef.shallow().once('value'); // Shallow fetch keys only if possible (Firebase RTDB shallow support is limited mostly to REST, but SDK does full fetch unless using REST).
+        // Since JS SDK doesn't support true shallow count without download, for Free Tier safety, we will restrict to checking metadata if available, OR just download all keys (minimal bandwidth compared to full objects).
+        // For this implementation, we will fetch order KEYS only using REST API logic if possible, but standard SDK method:
+        // We will orderByKey and limitToLast(1) to get the latest, but to COUNT we need more.
+        // Practical approach for small DBs: Fetch all keys. 
+
+        document.getElementById('db-total-orders').textContent = "Analizando...";
+
+        APP_STATE.dbRef.once('value', snap => {
+            const count = snap.numChildren();
+            const limit = 5000;
+            const percent = Math.min((count / limit) * 100, 100);
+
+            document.getElementById('db-total-orders').textContent = count.toLocaleString();
+            document.getElementById('db-usage-bar').style.width = percent + '%';
+
+            const statusEl = document.getElementById('db-health-status');
+            const msgEl = document.getElementById('db-health-msg');
+            const iconEl = document.getElementById('db-health-icon');
+            const cardEl = document.getElementById('db-health-card');
+            const barEl = document.getElementById('db-usage-bar');
+
+            if (count < 3000) {
+                statusEl.textContent = "Saludable";
+                msgEl.textContent = "Uso bajo de recursos. Todo en orden.";
+                iconEl.textContent = "✅";
+                cardEl.style.borderLeftColor = "#2e7d32";
+                barEl.style.backgroundColor = "#2e7d32";
+            } else if (count < 5000) {
+                statusEl.textContent = "Atención";
+                msgEl.textContent = "La base de datos está creciendo. Considera una limpieza pronto.";
+                iconEl.textContent = "⚠️";
+                cardEl.style.borderLeftColor = "#f57c00";
+                barEl.style.backgroundColor = "#f57c00";
+            } else {
+                statusEl.textContent = "CRÍTICO";
+                msgEl.textContent = "Límite gratuito en riesgo de lentitud. ¡LIMPIEZA REQUERIDA!";
+                iconEl.textContent = "🚨";
+                cardEl.style.borderLeftColor = "#d32f2f";
+                barEl.style.backgroundColor = "#d32f2f";
+            }
+        });
+    },
+
+    backupDatabase: async function () {
+        const btn = document.getElementById('btn-backup');
+        btn.textContent = "⏳ GENERANDO JSON...";
+        btn.disabled = true;
+
+        try {
+            const snap = await firebase.database().ref('/').once('value');
+            const data = snap.val();
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `BACKUP_ORE_FULL_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+
+            alert("✅ Copia de Seguridad Descargada.\n\nGuarda este archivo en un lugar seguro (Google Drive / USB).");
+
+            // Enable Clean Button
+            document.getElementById('btn-clean').disabled = false;
+            document.getElementById('btn-clean').style.opacity = "1";
+            document.getElementById('btn-clean').style.cursor = "pointer";
+
+        } catch (e) {
+            alert("Error generando backup: " + e.message);
+        } finally {
+            btn.textContent = "📥 1. DESCARGAR COPIA COMPLETA (JSON)";
+            btn.disabled = false;
+        }
+    },
+
+    cleanDatabase: async function () {
+        const scope = document.getElementById('db-clean-scope').value;
+        if (!confirm("⚠️ ¡PELIGRO! ⚠️\n\nEstás a punto de borrar datos de forma PERMANENTE.\n¿Ya descargaste y verificaste tu copia de seguridad?\n\nEsta acción NO se puede deshacer.")) return;
+
+        let cutoffDate = new Date();
+
+        if (scope === '3months') cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+        else if (scope === '6months') cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+        else if (scope === '1year') cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+        else if (scope === 'all') { // Reset logic 
+            const verify = prompt("Para borrar TODO el historial, escribe 'BORRAR TODO':");
+            if (verify !== 'BORRAR TODO') return alert("Acción cancelada.");
+
+            await APP_STATE.dbRef.remove();
+            await firebase.database().ref('orders_archive').remove();
+            await firebase.database().ref('movements').remove();
+
+            alert("Base de datos REINICIADA completamente.");
+            window.location.reload();
+            return;
+        }
+
+        // Partial cleanup based on date
+        // Strategy: Iterate recent orders is not efficient for verification, 
+        // but for deletion we need to find OLD ones.
+        // We will iterate keys. Since PushIDs are timestamp based, we can calculate the cutoff PushID.
+
+        const maxKey = this.generatePushID(cutoffDate.getTime()) + '-zzzzzzzz';
+
+        const loader = document.getElementById('btn-clean');
+        loader.textContent = "⏳ BORRANDO...";
+
+        try {
+            // Find orders OLDER than maxKey (startAt 0, endAt maxKey)
+            // Note: generatePushID handles the timestamp conversion.
+            const ordersRef = APP_STATE.dbRef;
+            const snap = await ordersRef.orderByKey().endAt(maxKey).once('value');
+
+            let count = 0;
+            const updates = {};
+
+            snap.forEach(child => {
+                updates[child.key] = null; // Delete
+                count++;
+            });
+
+            if (count === 0) {
+                alert("No se encontraron registros tan antiguos para borrar.");
+            } else {
+                await ordersRef.update(updates);
+                alert(`✅ Limpieza completada.\n\nSe eliminaron ${count} registros antiguos.`);
+                this.checkDBHealth(); // Refresh UI
+            }
+
+        } catch (e) {
+            alert("Error en limpieza: " + e.message);
+        } finally {
+            loader.textContent = "🗑️ 3. ELIMINAR DATOS SELECCIONADOS";
+            // Disable again for safety
+            document.getElementById('btn-clean').disabled = true;
+            document.getElementById('btn-clean').style.opacity = "0.5";
+            document.getElementById('btn-clean').style.cursor = "not-allowed";
         }
     },
 

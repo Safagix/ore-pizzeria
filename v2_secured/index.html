@@ -254,6 +254,9 @@
                     <div class="admin-menu-item" id="menu-prod" onclick="app.switchAdminTab('products')">
                         🍕 Productos
                     </div>
+                    <div class="admin-menu-item" id="menu-db" onclick="app.switchAdminTab('db')">
+                        🗄️ Base de Datos
+                    </div>
                 </aside>
 
                 <!-- Main Content -->
@@ -356,6 +359,71 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Database Maintenance View (Hidden Container) -->
+            <div id="admin-db-area" class="admin-content hidden">
+                <h2 class="brand" style="margin-bottom: 20px;">Mantenimiento de Datos</h2>
+
+                <!-- Health Monitor -->
+                <div class="stats-card" id="db-health-card" style="border-left: 5px solid #2e7d32;">
+                    <h3>Estado de Salud</h3>
+                    <p style="color: #aaa; margin: 10px 0;"> monitoreo de uso del plan gratuito.</p>
+                    <div style="display: flex; gap: 20px; align-items: center; margin-top: 15px;">
+                        <div style="font-size: 3rem;" id="db-health-icon">✅</div>
+                        <div>
+                            <h4 style="margin: 0; color: white; font-size: 1.2rem;" id="db-health-status">Saludable</h4>
+                            <small style="color: #888;" id="db-health-msg">Uso bajo de recursos</small>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px; background: #111; padding: 15px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Pedidos Totales:</span>
+                            <span style="color: white; font-weight: bold;" id="db-total-orders">Calculando...</span>
+                        </div>
+                        <div style="width: 100%; background: #333; height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div id="db-usage-bar" style="width: 5%; background: #2e7d32; height: 100%;"></div>
+                        </div>
+                        <small style="color: #666; font-size: 0.7rem; display: block; margin-top: 5px;">Límite
+                            recomendado: 5.000 pedidos</small>
+                    </div>
+                </div>
+
+                <!-- Cleaning Tools -->
+                <div class="stats-card" style="border-left: 5px solid #d32f2f;">
+                    <h3>Zona de Peligro (Limpieza)</h3>
+                    <p style="color: #aaa; margin: 10px 0;">Elimina datos antiguos para liberar espacio. <br> <b
+                            style="color: #f57c00;">REQUIERE COPIA DE SEGURIDAD PREVIA.</b></p>
+
+                    <div
+                        style="background: rgba(211, 47, 47, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #d32f2f;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <button class="btn btn-gold" onclick="app.backupDatabase()" id="btn-backup">
+                                📥 1. DESCARGAR COPIA COMPLETA (JSON)
+                            </button>
+                        </div>
+
+                        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+
+                        <label style="display: block; color: #ccc; margin-bottom: 10px;">2. Seleccionar antigüedad a
+                            borrar:</label>
+                        <select id="db-clean-scope"
+                            style="padding: 10px; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px;">
+                            <option value="3months">Más de 3 meses de antigüedad</option>
+                            <option value="6months">Más de 6 meses de antigüedad</option>
+                            <option value="1year">Más de 1 año de antigüedad</option>
+                            <option value="all">TODO EL HISTORIAL (Reset completo)</option>
+                        </select>
+
+                        <button class="btn btn-danger" onclick="app.cleanDatabase()" id="btn-clean" disabled
+                            style="opacity: 0.5; cursor: not-allowed;">
+                            🗑️ 3. ELIMINAR DATOS SELECCIONADOS
+                        </button>
+                        <small style="display: block; color: #666; margin-top: 5px;">* El botón se activará solo después
+                            de descargar la copia.</small>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- SERVICE VIEW (MOVIMIENTOS) -->
