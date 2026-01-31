@@ -523,25 +523,45 @@ const app = {
     },
 
     updateCloseShiftBreakdown: async function () {
-        const stats = await this.getTodayBreakdown();
-        document.getElementById('detail-petty-cash').textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
+        try {
+            const stats = await this.getTodayBreakdown();
 
-        // Use DB Stats for reliability
-        document.getElementById('detail-total-sales').textContent = `Gs. ${stats.total.toLocaleString()}`;
-        document.getElementById('detail-pizzas').textContent = `Gs. ${stats.pizza.toLocaleString()}`;
-        document.getElementById('detail-drinks').textContent = `Gs. ${stats.drink.toLocaleString()}`;
-        document.getElementById('detail-delivery').textContent = `Gs. ${stats.delivery.toLocaleString()}`;
+            // Defensive null checks to prevent silent failures
+            const setPetty = document.getElementById('detail-petty-cash');
+            if (setPetty) setPetty.textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
 
-        // New: Movements UI
-        document.getElementById('detail-income').textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
-        document.getElementById('detail-expense').textContent = `Gs. ${stats.movementsOut.toLocaleString()}`;
+            // Use DB Stats for reliability
+            const setTotal = document.getElementById('detail-total-sales');
+            if (setTotal) setTotal.textContent = `Gs. ${stats.total.toLocaleString()}`;
 
-        // Correct Formula: 
-        // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
-        // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
-        const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
-        document.getElementById('expected-cash-display').textContent = `Gs. ${newExpected.toLocaleString()}`;
-        APP_STATE.expectedCash = newExpected;
+            const setPizzas = document.getElementById('detail-pizzas');
+            if (setPizzas) setPizzas.textContent = `Gs. ${stats.pizza.toLocaleString()}`;
+
+            const setDrinks = document.getElementById('detail-drinks');
+            if (setDrinks) setDrinks.textContent = `Gs. ${stats.drink.toLocaleString()}`;
+
+            const setDelivery = document.getElementById('detail-delivery');
+            if (setDelivery) setDelivery.textContent = `Gs. ${stats.delivery.toLocaleString()}`;
+
+            // Movements UI
+            const setIncome = document.getElementById('detail-income');
+            if (setIncome) setIncome.textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
+
+            const setExpense = document.getElementById('detail-expense');
+            if (setExpense) setExpense.textContent = `Gs. ${stats.movementsOut.toLocaleString()}`;
+
+            // Correct Formula: 
+            // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
+            // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
+            const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
+
+            const setExpected = document.getElementById('expected-cash-display');
+            if (setExpected) setExpected.textContent = `Gs. ${newExpected.toLocaleString()}`;
+            APP_STATE.expectedCash = newExpected;
+        } catch (error) {
+            console.error('Error en updateCloseShiftBreakdown:', error);
+            this.showToast('Error cargando datos de cierre', 'error');
+        }
     },
 
     // --- UTILS ---
