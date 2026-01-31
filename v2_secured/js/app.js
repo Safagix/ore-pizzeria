@@ -26,8 +26,7 @@ const APP_STATE = {
         drinks: []
     },
     clients: [],
-    dbRef: null,
-    safeMode: false
+    dbRef: null
 };
 
 const app = {
@@ -58,6 +57,10 @@ const app = {
 
             // M3 FIX: Auto-save shift state every 30 seconds
             setInterval(() => this.saveLocalState(), 30000);
+
+            // NEW: Initialize Connection Monitoring
+            this.initConnectionMonitoring();
+
         } catch (e) {
             console.error(e);
             this.showToast('Error conectando a DB', 'error');
@@ -104,6 +107,93 @@ const app = {
         });
     },
 
+    // --- CONNECTION & PRESENCE (NEW) ---
+    initConnectionMonitoring: function () {
+        // Monitor own connection state
+        const connectedRef = firebase.database().ref('.info/connected');
+        connectedRef.on('value', (snap) => {
+            const isConnected = snap.val() === true;
+            this.updateMyStatusUI(isConnected);
+
+            // If logged in, update presence in DB
+            if (isConnected && APP_STATE.role) {
+                this.updatePresenceInDB(APP_STATE.role);
+            }
+        });
+    },
+
+    updatePresenceInDB: function (role) {
+        // We only track Cashier and Chef for coordination
+        if (role !== 'cashier' && role !== 'chef') return;
+
+        const userStatusRef = firebase.database().ref(`presence/${role}`);
+
+        // Mark online
+        userStatusRef.set({
+            online: true,
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // Mark offline on disconnect
+        userStatusRef.onDisconnect().set({
+            online: false,
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
+    },
+
+    listenPeerStatus: function (myRole) {
+        let peerRole = '';
+        let peerLabel = '';
+
+        if (myRole === 'cashier') {
+            peerRole = 'chef';
+            peerLabel = '👨‍🍳 Chef';
+        } else if (myRole === 'chef') {
+            peerRole = 'cashier';
+            peerLabel = '🛒 Caja';
+        } else {
+            return; // Admin/Service don't need peer monitoring
+        }
+
+        const peerRef = firebase.database().ref(`presence/${peerRole}`);
+        document.getElementById('peer-label').textContent = peerLabel;
+
+        peerRef.on('value', (snap) => {
+            const data = snap.val();
+            const isOnline = data && data.online === true;
+            this.updatePeerStatusUI(isOnline);
+        });
+    },
+
+    updateMyStatusUI: function (isOnline) {
+        const dot = document.getElementById('status-dot-me');
+        const text = document.getElementById('status-text-me');
+        if (!dot || !text) return;
+
+        if (isOnline) {
+            dot.style.background = '#4caf50'; // Green
+            dot.style.boxShadow = '0 0 5px #4caf50';
+            text.textContent = 'En Línea';
+        } else {
+            dot.style.background = '#f44336'; // Red
+            dot.style.boxShadow = 'none';
+            text.textContent = 'Sin Red';
+        }
+    },
+
+    updatePeerStatusUI: function (isOnline) {
+        const dot = document.getElementById('status-dot-peer');
+        if (!dot) return;
+
+        if (isOnline) {
+            dot.style.background = '#4caf50';
+            dot.style.boxShadow = '0 0 5px #4caf50';
+        } else {
+            dot.style.background = '#777'; // Gray/Red
+            dot.style.boxShadow = 'none';
+        }
+    },
+
     triggerGoodJob: function () {
         if (!document.getElementById('modal-good-job').classList.contains('hidden')) return;
 
@@ -120,31 +210,6 @@ const app = {
                 location.reload();
             }
         }, 1000);
-    },
-
-    // --- PRIVACY PROTECTION ---
-    toggleSafeMode: function () {
-        APP_STATE.safeMode = !APP_STATE.safeMode;
-
-        // Target sensitive elements
-        const targets = [
-            '#petty-cash-display',
-            '#cart-total',
-            '#daily-total',
-            '.arqueo-diff',
-            '.stats-card h3 span',
-            '.breakdown-row span:last-child',
-            '#expected-cash-display'
-        ];
-
-        targets.forEach(selector => {
-            document.querySelectorAll(selector).forEach(el => {
-                if (APP_STATE.safeMode) el.classList.add('safe-mode');
-                else el.classList.remove('safe-mode');
-            });
-        });
-
-        this.showToast(APP_STATE.safeMode ? '🔒 Modo Seguro: Datos ocultos' : '🔓 Datos visibles', 'info');
     },
 
     // --- SECURITY & UTILS ---
@@ -455,6 +520,12 @@ const app = {
         if (role === 'cashier') {
             document.getElementById('view-cashier').classList.remove('hidden');
             document.getElementById('nav-cashier').classList.remove('hidden');
+            document.getElementById('connection-status').classList.remove('hidden'); // Show indicator
+            document.getElementById('connection-status').style.display = 'flex';
+
+            // Start tracking Chef
+            this.updatePresenceInDB('cashier');
+            this.listenPeerStatus('cashier');
 
             // Only request open shift if stock not active (restored state check)
             if (!APP_STATE.stockActive) {
@@ -465,6 +536,13 @@ const app = {
             this.listenOrdersGeneric();
         } else if (role === 'chef') {
             document.getElementById('view-chef').classList.remove('hidden');
+            document.getElementById('connection-status').classList.remove('hidden'); // Show indicator
+            document.getElementById('connection-status').style.display = 'flex';
+
+            // Start tracking Cashier
+            this.updatePresenceInDB('chef');
+            this.listenPeerStatus('chef');
+
             this.listenChef();
         } else if (role === 'admin') {
             document.getElementById('view-admin').classList.remove('hidden');

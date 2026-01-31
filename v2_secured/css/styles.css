@@ -24,12 +24,6 @@
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-.safe-mode {
-    filter: blur(5px);
-    user-select: none;
-    pointer-events: none;
-}
-
 * {
     box-sizing: border-box;
     margin: 0;
