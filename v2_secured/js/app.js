@@ -813,7 +813,7 @@ const app = {
             const splitReport = `\n\nDESGLOSE DE VENTAS:\n` +
                 `- Ventas Pizzas:     Gs. ${stats.pizza.toLocaleString()}\n` +
                 `- Ventas Bebidas:    Gs. ${stats.drink.toLocaleString()}\n` +
-                `- Delivery Fees:     Gs. ${stats.delivery.toLocaleString()}`;
+                `- Costo Delivery:    Gs. ${stats.delivery.toLocaleString()}`;
 
             const finalReport = report + splitReport;
 
@@ -1151,7 +1151,7 @@ const app = {
                 const breakdownHTML = `
                     <div class="breakdown-row"><span>Ventas Efectivo</span><span style="color:#4caf50">${this.formatGs(paymentMethods['Efectivo'])}</span></div>
                     <div class="breakdown-row"><span>Ventas Transferencia</span><span style="color:#2196f3">${this.formatGs(paymentMethods['Transferencia'])}</span></div>
-                    <div class="breakdown-row"><span>Delivery Fees</span><span>${this.formatGs(deliveryFees)}</span></div>
+                    <div class="breakdown-row"><span>Costo Delivery</span><span>${this.formatGs(deliveryFees)}</span></div>
                     <div class="breakdown-row" style="color:var(--success)"><span>+ Ingresos Extra</span><span>${this.formatGs(extraIncome)}</span></div>
                     <div class="breakdown-row" style="color:var(--danger)"><span>- Gastos / Retiros</span><span>${this.formatGs(expenses)}</span></div>
                     <div class="breakdown-row total"><span>Beneficio Neto</span><span style="color:var(--primary-gold)">${this.formatGs(netSales)}</span></div>
