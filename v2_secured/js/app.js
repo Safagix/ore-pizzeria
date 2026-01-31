@@ -183,15 +183,15 @@ const app = {
     seedDatabase: function () {
         // Carta Oficial Ore Pizzeria
         const initialFlavors = [
-            { id: 'mus', name: 'Mozzarella', price: 40000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, hojas de Albahaca, aceitunas' },
-            { id: 'pep', name: 'Pepperoni', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, pepperoni, aceitunas' },
-            { id: 'pal', name: 'Palmito', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, palmito, salsa golf, aceitunas' },
-            { id: 'cat', name: 'Catupiry con pollo', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, queso catupiry, pollo desmechado, orégano, aceitunas' },
-            { id: 'nap', name: 'Napolitana', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, rodajas de tomate, orégano, jamón en cubitos, ajo, hojas de albahaca, aceitunas' },
-            { id: 'cho', name: 'Choclo con catupiry', price: 45000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, queso catupiry, choclo, orégano, aceitunas' },
-            { id: 'cip', name: 'La Cipolla', price: 46000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, queso azul, cebolla caramelizada, panceta, aceitunas' },
-            { id: 'veg', name: 'Vegetariana', price: 46000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, orégano, cherry, choclo, cebolla morada, palmito, locote verde, aceitunas' },
-            { id: 'arr', name: 'El Arriero', price: 50000, cat: 'flavors', ingredients: 'Salsa de tomate, queso mozzarella, chorizo picante, cebolla morada, locote en julianas, orégano, aceitunas, salsa picante casera' }
+            { id: 'mus', name: 'Mozzarella', price: 40000, cat: 'flavors', img: 'img/pizzas/Muzarella.JPG', ingredients: 'Salsa de tomate, queso mozzarella, orégano, hojas de Albahaca, aceitunas' },
+            { id: 'pep', name: 'Pepperoni', price: 45000, cat: 'flavors', img: 'img/pizzas/Pepperoni.png', ingredients: 'Salsa de tomate, queso mozzarella, orégano, pepperoni, aceitunas' },
+            { id: 'pal', name: 'Palmito', price: 45000, cat: 'flavors', img: 'img/pizzas/Palmito.jpg', ingredients: 'Salsa de tomate, queso mozzarella, orégano, palmito, salsa golf, aceitunas' },
+            { id: 'cat', name: 'Catupiry con pollo', price: 45000, cat: 'flavors', img: 'img/pizzas/Katupyry con pollo (2).jpg', ingredients: 'Salsa de tomate, queso mozzarella, queso catupiry, pollo desmechado, orégano, aceitunas' },
+            { id: 'nap', name: 'Napolitana', price: 45000, cat: 'flavors', img: 'img/pizzas/Napolitana.jpg', ingredients: 'Salsa de tomate, queso mozzarella, rodajas de tomate, orégano, jamón en cubitos, ajo, hojas de albahaca, aceitunas' },
+            { id: 'cho', name: 'Choclo con catupiry', price: 45000, cat: 'flavors', img: 'img/pizzas/Katupyry con choclo.jpg', ingredients: 'Salsa de tomate, queso mozzarella, queso catupiry, choclo, orégano, aceitunas' },
+            { id: 'cip', name: 'La Cipolla', price: 46000, cat: 'flavors', img: 'img/pizzas/La Cipolla 3.JPG', ingredients: 'Salsa de tomate, queso mozzarella, orégano, queso azul, cebolla caramelizada, panceta, aceitunas' },
+            { id: 'veg', name: 'Vegetariana', price: 46000, cat: 'flavors', img: 'img/pizzas/Vegetariana 2.JPG', ingredients: 'Salsa de tomate, queso mozzarella, orégano, cherry, choclo, cebolla morada, palmito, locote verde, aceitunas' },
+            { id: 'arr', name: 'El Arriero', price: 50000, cat: 'flavors', img: 'img/pizzas/Arriero.jpg', ingredients: 'Salsa de tomate, queso mozzarella, chorizo picante, cebolla morada, locote en julianas, orégano, aceitunas, salsa picante casera' }
         ];
         const initialDrinks = [
             { id: 'coke500', name: 'Coca Cola 500ml', price: 9000, cat: 'drinks' },
@@ -205,8 +205,8 @@ const app = {
         console.log("Base de datos actualizada con Carta Oficial.");
     },
 
-    // Herramienta de migración
-    forceUpdateMenu: function () {
+    // Herramienta de sincronización oficial
+    syncMenuPro: function () {
         if (confirm("¿Seguro que quieres borrar el menú actual y cargar la Carta Oficial?")) {
             firebase.database().ref('products').remove()
                 .then(() => {
