@@ -358,82 +358,84 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Database Maintenance View (Hidden Container) -->
-            <div id="admin-db-area" class="admin-content hidden">
-                <h2 class="brand" style="margin-bottom: 20px;">Mantenimiento de Datos</h2>
+                <!-- Database Maintenance View (CORRECTLY PLACED) -->
+                <div id="admin-db-area" class="admin-content hidden">
+                    <h2 class="brand" style="margin-bottom: 20px;">Mantenimiento de Datos</h2>
 
-                <!-- Health Monitor -->
-                <div class="stats-card" id="db-health-card" style="border-left: 5px solid #2e7d32;">
-                    <h3>Estado de Salud</h3>
-                    <p style="color: #aaa; margin: 10px 0;"> monitoreo de uso del plan gratuito.</p>
-                    <div style="display: flex; gap: 20px; align-items: center; margin-top: 15px;">
-                        <div style="font-size: 3rem;" id="db-health-icon">✅</div>
-                        <div>
-                            <h4 style="margin: 0; color: white; font-size: 1.2rem;" id="db-health-status">Saludable</h4>
-                            <small style="color: #888;" id="db-health-msg">Uso bajo de recursos</small>
+                    <!-- Health Monitor -->
+                    <div class="stats-card" id="db-health-card" style="border-left: 5px solid #2e7d32;">
+                        <h3>Estado de Salud</h3>
+                        <p style="color: #aaa; margin: 10px 0;"> monitoreo de uso del plan gratuito.</p>
+                        <div style="display: flex; gap: 20px; align-items: center; margin-top: 15px;">
+                            <div style="font-size: 3rem;" id="db-health-icon">✅</div>
+                            <div>
+                                <h4 style="margin: 0; color: white; font-size: 1.2rem;" id="db-health-status">Saludable
+                                </h4>
+                                <small style="color: #888;" id="db-health-msg">Uso bajo de recursos</small>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px; background: #111; padding: 15px; border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span>Pedidos Totales:</span>
+                                <span style="color: white; font-weight: bold;" id="db-total-orders">Calculando...</span>
+                            </div>
+                            <div
+                                style="width: 100%; background: #333; height: 6px; border-radius: 3px; overflow: hidden;">
+                                <div id="db-usage-bar" style="width: 5%; background: #2e7d32; height: 100%;"></div>
+                            </div>
+                            <small style="color: #666; font-size: 0.7rem; display: block; margin-top: 5px;">Límite
+                                recomendado: 5.000 pedidos</small>
                         </div>
                     </div>
-                    <div style="margin-top: 20px; background: #111; padding: 15px; border-radius: 8px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <span>Pedidos Totales:</span>
-                            <span style="color: white; font-weight: bold;" id="db-total-orders">Calculando...</span>
-                        </div>
-                        <div style="width: 100%; background: #333; height: 6px; border-radius: 3px; overflow: hidden;">
-                            <div id="db-usage-bar" style="width: 5%; background: #2e7d32; height: 100%;"></div>
-                        </div>
-                        <small style="color: #666; font-size: 0.7rem; display: block; margin-top: 5px;">Límite
-                            recomendado: 5.000 pedidos</small>
-                    </div>
-                </div>
 
-                <!-- Cleaning Tools -->
-                <div class="stats-card" style="border-left: 5px solid #d32f2f;">
-                    <h3>Zona de Peligro (Limpieza)</h3>
-                    <p style="color: #aaa; margin: 10px 0;">Elimina datos antiguos para liberar espacio. <br> <b
-                            style="color: #f57c00;">REQUIERE COPIA DE SEGURIDAD PREVIA.</b></p>
+                    <!-- Cleaning Tools -->
+                    <div class="stats-card" style="border-left: 5px solid #d32f2f;">
+                        <h3>Zona de Peligro (Limpieza)</h3>
+                        <p style="color: #aaa; margin: 10px 0;">Elimina datos antiguos para liberar espacio. <br> <b
+                                style="color: #f57c00;">REQUIERE COPIA DE SEGURIDAD PREVIA.</b></p>
 
-                    <div
-                        style="background: rgba(211, 47, 47, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #d32f2f;">
-                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                            <button class="btn btn-gold" onclick="app.backupDatabase()" id="btn-backup">
-                                📥 1. DESCARGAR COPIA COMPLETA (JSON)
+                        <div
+                            style="background: rgba(211, 47, 47, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #d32f2f;">
+                            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                <button class="btn btn-gold" onclick="app.backupDatabase()" id="btn-backup">
+                                    📥 1. DESCARGAR COPIA COMPLETA (JSON)
+                                </button>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+
+                            <label style="display: block; color: #ccc; margin-bottom: 10px;">2. Seleccionar antigüedad a
+                                borrar:</label>
+                            <select id="db-clean-scope"
+                                style="padding: 10px; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px;">
+                                <option value="3months">Más de 3 meses de antigüedad</option>
+                                <option value="6months">Más de 6 meses de antigüedad</option>
+                                <option value="1year">Más de 1 año de antigüedad</option>
+                                <option value="all">TODO EL HISTORIAL (Reset completo)</option>
+                            </select>
+
+                            <button class="btn btn-danger" onclick="app.cleanDatabase()" id="btn-clean" disabled
+                                style="opacity: 0.5; cursor: not-allowed;">
+                                🗑️ 3. ELIMINAR DATOS SELECCIONADOS
                             </button>
+                            <small style="display: block; color: #666; margin-top: 5px;">* El botón se activará solo
+                                después de descargar la copia.</small>
                         </div>
-
-                        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
-
-                        <label style="display: block; color: #ccc; margin-bottom: 10px;">2. Seleccionar antigüedad a
-                            borrar:</label>
-                        <select id="db-clean-scope"
-                            style="padding: 10px; background: #222; border: 1px solid #444; color: white; margin-bottom: 10px;">
-                            <option value="3months">Más de 3 meses de antigüedad</option>
-                            <option value="6months">Más de 6 meses de antigüedad</option>
-                            <option value="1year">Más de 1 año de antigüedad</option>
-                            <option value="all">TODO EL HISTORIAL (Reset completo)</option>
-                        </select>
-
-                        <button class="btn btn-danger" onclick="app.cleanDatabase()" id="btn-clean" disabled
-                            style="opacity: 0.5; cursor: not-allowed;">
-                            🗑️ 3. ELIMINAR DATOS SELECCIONADOS
-                        </button>
-                        <small style="display: block; color: #666; margin-top: 5px;">* El botón se activará solo después
-                            de descargar la copia.</small>
                     </div>
                 </div>
             </div>
 
-        </div>
 
-        <!-- SERVICE VIEW (MOVIMIENTOS) -->
-        <div id="view-service" class="content-view hidden"
-            style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <h1 class="brand" style="color: var(--primary-gold); margin-bottom: 40px;">Gestión de Movimientos</h1>
 
-            <!-- Main Buttons -->
-            <div id="service-buttons" style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
-                <button onclick="app.openMovementForm('ingreso')" style="
+            <!-- SERVICE VIEW (MOVIMIENTOS) -->
+            <div id="view-service" class="content-view hidden"
+                style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <h1 class="brand" style="color: var(--primary-gold); margin-bottom: 40px;">Gestión de Movimientos</h1>
+
+                <!-- Main Buttons -->
+                <div id="service-buttons" style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
+                    <button onclick="app.openMovementForm('ingreso')" style="
                     width: 200px; height: 200px; 
                     background: var(--success); 
                     border: none; border-radius: 20px; 
@@ -441,11 +443,11 @@
                     display: flex; flex-direction: column; align-items: center; justify-content: center;
                     cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
                     transition: transform 0.2s;">
-                    <span style="font-size: 4rem; margin-bottom: 10px;">💰</span>
-                    INGRESO
-                </button>
+                        <span style="font-size: 4rem; margin-bottom: 10px;">💰</span>
+                        INGRESO
+                    </button>
 
-                <button onclick="app.openMovementForm('egreso')" style="
+                    <button onclick="app.openMovementForm('egreso')" style="
                     width: 200px; height: 200px; 
                     background: #d32f2f; 
                     border: none; border-radius: 20px; 
@@ -453,317 +455,321 @@
                     display: flex; flex-direction: column; align-items: center; justify-content: center;
                     cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
                     transition: transform 0.2s;">
-                    <span style="font-size: 4rem; margin-bottom: 10px;">💸</span>
-                    EGRESO
-                </button>
-            </div>
+                        <span style="font-size: 4rem; margin-bottom: 10px;">💸</span>
+                        EGRESO
+                    </button>
+                </div>
 
-            <!-- Movement Form Modal (Inline) -->
-            <div id="service-form" class="hidden" style="
+                <!-- Movement Form Modal (Inline) -->
+                <div id="service-form" class="hidden" style="
                 background: var(--bg-card); 
                 padding: 30px; border-radius: 20px; 
                 width: 100%; max-width: 400px;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.8);
                 text-align: center; margin-top: 20px;">
 
-                <h2 id="mov-title" style="margin-bottom: 20px; color: white;">REGISTRAR MOVIMIENTO</h2>
+                    <h2 id="mov-title" style="margin-bottom: 20px; color: white;">REGISTRAR MOVIMIENTO</h2>
 
-                <input type="number" id="mov-amount" placeholder="Monto (Gs. ej: 50000)" style="
+                    <input type="number" id="mov-amount" placeholder="Monto (Gs. ej: 50000)" style="
                     width: 100%; padding: 15px; margin-bottom: 15px; 
                     background: #222; border: 1px solid #444; 
                     color: white; font-size: 1.2rem; border-radius: 10px;">
 
-                <textarea id="mov-desc" placeholder="Descripción (Obligatorio)" rows="3" style="
+                    <textarea id="mov-desc" placeholder="Descripción (Obligatorio)" rows="3" style="
                     width: 100%; padding: 15px; margin-bottom: 20px; 
                     background: #222; border: 1px solid #444; 
                     color: white; font-size: 1rem; border-radius: 10px; resize: none;"></textarea>
 
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn" onclick="app.initServiceView()"
-                        style="flex: 1; background: #666;">CANCELAR</button>
-                    <button class="btn btn-gold" onclick="app.saveMovement()" style="flex: 1;">GUARDAR</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" onclick="app.initServiceView()"
+                            style="flex: 1; background: #666;">CANCELAR</button>
+                        <button class="btn btn-gold" onclick="app.saveMovement()" style="flex: 1;">GUARDAR</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="modal-stock" class="modal hidden">
-            <div class="modal-content arqueo-dashboard">
-                <div class="arqueo-header">
-                    <h2 class="brand">Cierre de Caja</h2>
-                </div>
+            <div id="modal-stock" class="modal hidden">
+                <div class="modal-content arqueo-dashboard">
+                    <div class="arqueo-header">
+                        <h2 class="brand">Cierre de Caja</h2>
+                    </div>
 
-                <div class="arqueo-body">
-                    <!-- Panel Izquierdo: Calculadora -->
-                    <div class="arqueo-calc-panel">
-                        <h3>Calculadora de Billetes (Gs)</h3>
+                    <div class="arqueo-body">
+                        <!-- Panel Izquierdo: Calculadora -->
+                        <div class="arqueo-calc-panel">
+                            <h3>Calculadora de Billetes (Gs)</h3>
 
-                        <div class="arqueo-tables-row">
-                            <!-- Billetes -->
-                            <div class="arqueo-table-col">
-                                <p class="table-title">Billetes</p>
-                                <table class="arqueo-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Denom</th>
-                                            <th>Cant</th>
-                                            <th>Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="bills-body"></tbody>
-                                </table>
+                            <div class="arqueo-tables-row">
+                                <!-- Billetes -->
+                                <div class="arqueo-table-col">
+                                    <p class="table-title">Billetes</p>
+                                    <table class="arqueo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Denom</th>
+                                                <th>Cant</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bills-body"></tbody>
+                                    </table>
+                                </div>
+                                <!-- Monedas -->
+                                <div class="arqueo-table-col">
+                                    <p class="table-title">Monedas</p>
+                                    <table class="arqueo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Denom</th>
+                                                <th>Cant</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="coins-body"></tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <!-- Monedas -->
-                            <div class="arqueo-table-col">
-                                <p class="table-title">Monedas</p>
-                                <table class="arqueo-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Denom</th>
-                                            <th>Cant</th>
-                                            <th>Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="coins-body"></tbody>
-                                </table>
+
+                            <div class="arqueo-total-bar">
+                                Total Caja: <span id="calc-total-display">0</span> Gs
                             </div>
                         </div>
 
-                        <div class="arqueo-total-bar">
-                            Total Caja: <span id="calc-total-display">0</span> Gs
+                        <!-- Panel Derecho: Movimientos -->
+                        <div class="arqueo-mov-panel">
+                            <h3>Registro Movimientos</h3>
+
+                            <div class="arqueo-mov-form">
+                                <input type="text" id="dash-mov-desc" placeholder="Descripción">
+                                <input type="number" id="dash-mov-amount" placeholder="Monto">
+                                <select id="dash-mov-type">
+                                    <option value="ingreso">Ingreso</option>
+                                    <option value="egreso">Egreso</option>
+                                </select>
+                                <button class="btn btn-gold" onclick="app.saveMovementDashboard()">Agregar</button>
+                            </div>
+
+                            <div id="dash-mov-list" class="arqueo-mov-list"></div>
+
+                            <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
+
+                            <div id="diff-container" class="arqueo-diff hidden"
+                                style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px;">
+                                <div
+                                    style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
+                                    DETALLE ESPERADO</div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
+                                    <span>Caja Chica (Inicio):</span><span id="detail-petty-cash">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
+                                    <span>Total Ventas:</span><span id="detail-total-sales">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                    <span>• Pizzas:</span><span id="detail-pizzas">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                    <span>• Bebidas:</span><span id="detail-drinks">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                    <span>• Delivery:</span><span id="detail-delivery">0</span>
+                                </div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--success);">
+                                    <span>+ Ingresos Extra:</span><span id="detail-income">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #f44336;">
+                                    <span>- Gastos/Retiros:</span><span id="detail-expense">0</span>
+                                </div>
+
+                                <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
+                                    <span>TOTAL EN CAJA:</span><span id="expected-cash-display"
+                                        style="color: var(--success);">--</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
+                                    <span>DIFERENCIA:</span><span id="diff-display">--</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Panel Derecho: Movimientos -->
-                    <div class="arqueo-mov-panel">
-                        <h3>Registro Movimientos</h3>
-
-                        <div class="arqueo-mov-form">
-                            <input type="text" id="dash-mov-desc" placeholder="Descripción">
-                            <input type="number" id="dash-mov-amount" placeholder="Monto">
-                            <select id="dash-mov-type">
-                                <option value="ingreso">Ingreso</option>
-                                <option value="egreso">Egreso</option>
-                            </select>
-                            <button class="btn btn-gold" onclick="app.saveMovementDashboard()">Agregar</button>
-                        </div>
-
-                        <div id="dash-mov-list" class="arqueo-mov-list"></div>
-
-                        <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
-
-                        <div id="diff-container" class="arqueo-diff hidden"
-                            style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px;">
-                            <div
-                                style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
-                                DETALLE ESPERADO</div>
-
-                            <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
-                                <span>Caja Chica (Inicio):</span><span id="detail-petty-cash">0</span>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
-                                <span>Total Ventas:</span><span id="detail-total-sales">0</span>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                <span>• Pizzas:</span><span id="detail-pizzas">0</span>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                <span>• Bebidas:</span><span id="detail-drinks">0</span>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                <span>• Delivery:</span><span id="detail-delivery">0</span>
-                            </div>
-
-                            <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--success);">
-                                <span>+ Ingresos Extra:</span><span id="detail-income">0</span>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #f44336;">
-                                <span>- Gastos/Retiros:</span><span id="detail-expense">0</span>
-                            </div>
-
-                            <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
-
-                            <div
-                                style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
-                                <span>TOTAL EN CAJA:</span><span id="expected-cash-display"
-                                    style="color: var(--success);">--</span>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
-                                <span>DIFERENCIA:</span><span id="diff-display">--</span>
-                            </div>
-                        </div>
+                    <div class="arqueo-footer">
+                        <button id="btn-cancel-opening" class="btn btn-outline" style="border-color: #666; color: #ccc;"
+                            onclick="app.closeModal('modal-stock')">← VOLVER A VENTAS</button>
+                        <button class="btn btn-gold" onclick="app.closeShift()">Cerrar Caja</button>
                     </div>
-                </div>
 
-                <div class="arqueo-footer">
-                    <button id="btn-cancel-opening" class="btn btn-outline" style="border-color: #666; color: #ccc;"
-                        onclick="app.closeModal('modal-stock')">← VOLVER A VENTAS</button>
-                    <button class="btn btn-gold" onclick="app.closeShift()">Cerrar Caja</button>
-                </div>
-
-                <!-- Apertura fields (hidden by default) -->
-                <div id="opening-fields" class="hidden arqueo-opening">
-                    <h3 class="brand">Configuración de Apertura</h3>
-                    <div class="opening-grid">
-                        <div><label>Stock Masas</label><input type="number" id="init-stock" placeholder="0"></div>
-                        <div><label>Stock Bebidas</label><input type="number" id="init-stock-drinks" placeholder="0">
+                    <!-- Apertura fields (hidden by default) -->
+                    <div id="opening-fields" class="hidden arqueo-opening">
+                        <h3 class="brand">Configuración de Apertura</h3>
+                        <div class="opening-grid">
+                            <div><label>Stock Masas</label><input type="number" id="init-stock" placeholder="0"></div>
+                            <div><label>Stock Bebidas</label><input type="number" id="init-stock-drinks"
+                                    placeholder="0">
+                            </div>
                         </div>
+                        <button class="btn btn-gold" style="width: 100%; margin-top: 15px;"
+                            onclick="app.setStock()">INICIAR
+                            TURNO</button>
                     </div>
-                    <button class="btn btn-gold" style="width: 100%; margin-top: 15px;" onclick="app.setStock()">INICIAR
-                        TURNO</button>
                 </div>
             </div>
-        </div>
 
-        <!-- SIDEBAR UPDATE (Add Close Session) -->
-        <style>
-            .cash-input-row {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 8px;
-                font-size: 0.9rem;
-            }
-
-            .cash-input-row input {
-                width: 80px;
-                margin-bottom: 0;
-                padding: 5px;
-                text-align: center;
-            }
-
-            /* Notification Badge - App Style */
-            .notification-badge {
-                position: absolute;
-                top: -8px;
-                right: -8px;
-                background: linear-gradient(135deg, #ff4757, #ff3838);
-                color: white;
-                font-size: 0.7rem;
-                font-weight: bold;
-                min-width: 20px;
-                height: 20px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0 5px;
-                box-shadow: 0 2px 8px rgba(255, 56, 56, 0.4);
-                animation: pulse-badge 2s infinite;
-                border: 2px solid var(--bg-dark);
-            }
-
-            @keyframes pulse-badge {
-
-                0%,
-                100% {
-                    transform: scale(1);
+            <!-- SIDEBAR UPDATE (Add Close Session) -->
+            <style>
+                .cash-input-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 8px;
+                    font-size: 0.9rem;
                 }
 
-                50% {
-                    transform: scale(1.1);
+                .cash-input-row input {
+                    width: 80px;
+                    margin-bottom: 0;
+                    padding: 5px;
+                    text-align: center;
                 }
-            }
 
-            /* Change Calculator Modal */
-            .change-modal-content {
-                background: var(--bg-card);
-                padding: 30px;
-                border-radius: 15px;
-                width: 90%;
-                max-width: 380px;
-                border: 2px solid var(--primary-gold);
-                text-align: center;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            }
+                /* Notification Badge - App Style */
+                .notification-badge {
+                    position: absolute;
+                    top: -8px;
+                    right: -8px;
+                    background: linear-gradient(135deg, #ff4757, #ff3838);
+                    color: white;
+                    font-size: 0.7rem;
+                    font-weight: bold;
+                    min-width: 20px;
+                    height: 20px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0 5px;
+                    box-shadow: 0 2px 8px rgba(255, 56, 56, 0.4);
+                    animation: pulse-badge 2s infinite;
+                    border: 2px solid var(--bg-dark);
+                }
 
-            .change-modal-content h2 {
-                color: var(--primary-gold);
-                margin-bottom: 10px;
-            }
+                @keyframes pulse-badge {
 
-            .change-display {
-                background: linear-gradient(135deg, #1e5630, #2e7d32);
-                padding: 20px;
-                border-radius: 10px;
-                margin: 20px 0;
-            }
+                    0%,
+                    100% {
+                        transform: scale(1);
+                    }
 
-            .change-display .label {
-                font-size: 0.9rem;
-                color: #a5d6a7;
-                margin-bottom: 5px;
-            }
+                    50% {
+                        transform: scale(1.1);
+                    }
+                }
 
-            .change-display .amount {
-                font-size: 2.5rem;
-                font-weight: bold;
-                color: #4caf50;
-            }
-        </style>
+                /* Change Calculator Modal */
+                .change-modal-content {
+                    background: var(--bg-card);
+                    padding: 30px;
+                    border-radius: 15px;
+                    width: 90%;
+                    max-width: 380px;
+                    border: 2px solid var(--primary-gold);
+                    text-align: center;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+                }
 
-        <!-- Modal: Change Calculator (for COBRAR) -->
-        <div id="modal-change" class="modal hidden">
-            <div class="change-modal-content">
-                <h2>💰 Cobrar Pedido</h2>
-                <p id="change-order-info" style="color: #888; margin-bottom: 15px;">#0000 - Cliente</p>
+                .change-modal-content h2 {
+                    color: var(--primary-gold);
+                    margin-bottom: 10px;
+                }
 
-                <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                    <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">Total a Cobrar:</p>
-                    <p id="change-total" style="font-size: 1.8rem; font-weight: bold; color: var(--primary-gold);">Gs. 0
-                    </p>
-                </div>
+                .change-display {
+                    background: linear-gradient(135deg, #1e5630, #2e7d32);
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                }
 
-                <input type="number" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
-                    style="width: 100%; padding: 15px; font-size: 1.1rem; background: #111; border: 2px solid var(--primary-gold); color: white; border-radius: 8px; text-align: center; margin-bottom: 10px;"
-                    oninput="app.calculateModalChange()">
+                .change-display .label {
+                    font-size: 0.9rem;
+                    color: #a5d6a7;
+                    margin-bottom: 5px;
+                }
 
-                <div class="change-display">
-                    <div class="label">💵 Vuelto a entregar:</div>
-                    <div class="amount" id="change-result">Gs. 0</div>
-                </div>
+                .change-display .amount {
+                    font-size: 2.5rem;
+                    font-weight: bold;
+                    color: #4caf50;
+                }
+            </style>
 
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn" style="flex: 1; background: #555;"
-                        onclick="app.closeModal('modal-change')">CANCELAR</button>
-                    <button class="btn btn-success" style="flex: 1;" onclick="app.confirmPayment()">✓ CONFIRMAR
-                        COBRO</button>
+            <!-- Modal: Change Calculator (for COBRAR) -->
+            <div id="modal-change" class="modal hidden">
+                <div class="change-modal-content">
+                    <h2>💰 Cobrar Pedido</h2>
+                    <p id="change-order-info" style="color: #888; margin-bottom: 15px;">#0000 - Cliente</p>
+
+                    <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">Total a Cobrar:</p>
+                        <p id="change-total" style="font-size: 1.8rem; font-weight: bold; color: var(--primary-gold);">
+                            Gs. 0
+                        </p>
+                    </div>
+
+                    <input type="number" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
+                        style="width: 100%; padding: 15px; font-size: 1.1rem; background: #111; border: 2px solid var(--primary-gold); color: white; border-radius: 8px; text-align: center; margin-bottom: 10px;"
+                        oninput="app.calculateModalChange()">
+
+                    <div class="change-display">
+                        <div class="label">💵 Vuelto a entregar:</div>
+                        <div class="amount" id="change-result">Gs. 0</div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" style="flex: 1; background: #555;"
+                            onclick="app.closeModal('modal-change')">CANCELAR</button>
+                        <button class="btn btn-success" style="flex: 1;" onclick="app.confirmPayment()">✓ CONFIRMAR
+                            COBRO</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Modal: Good Job (End of Shift) -->
-        <div id="modal-good-job" class="modal hidden" style="background: rgba(0,0,0,0.98);">
-            <div style="text-align: center; color: white; animation: fade-in 1s;">
-                <div style="font-size: 5rem; margin-bottom: 20px;">🎉 🍕 ✨</div>
-                <h1
-                    style="font-family: var(--font-serif); font-size: 2.5rem; color: var(--primary-gold); margin-bottom: 10px;">
-                    ¡Excelente Trabajo Equipo!</h1>
-                <p style="font-size: 1.2rem; color: #ccc;">Turno cerrado exitosamente.</p>
-                <div style="margin-top: 30px; font-size: 0.9rem; color: #888;">
-                    Cerrando sistema en <span id="shutdown-timer"
-                        style="color: var(--primary-gold); font-weight: bold; font-size: 1.2rem;">5</span> segundos...
+            <!-- Modal: Good Job (End of Shift) -->
+            <div id="modal-good-job" class="modal hidden" style="background: rgba(0,0,0,0.98);">
+                <div style="text-align: center; color: white; animation: fade-in 1s;">
+                    <div style="font-size: 5rem; margin-bottom: 20px;">🎉 🍕 ✨</div>
+                    <h1
+                        style="font-family: var(--font-serif); font-size: 2.5rem; color: var(--primary-gold); margin-bottom: 10px;">
+                        ¡Excelente Trabajo Equipo!</h1>
+                    <p style="font-size: 1.2rem; color: #ccc;">Turno cerrado exitosamente.</p>
+                    <div style="margin-top: 30px; font-size: 0.9rem; color: #888;">
+                        Cerrando sistema en <span id="shutdown-timer"
+                            style="color: var(--primary-gold); font-weight: bold; font-size: 1.2rem;">5</span>
+                        segundos...
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Firebase SDKs (v8) -->
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+            <!-- Firebase SDKs (v8) -->
+            <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-        <!-- Config -->
-        <script src="js/config.js"></script>
+            <!-- Config -->
+            <script src="js/config.js"></script>
 
-        <!-- Main Logic -->
-        <script src="js/app.js"></script>
+            <!-- Main Logic -->
+            <script src="js/app.js"></script>
 </body>
 
 </html>
