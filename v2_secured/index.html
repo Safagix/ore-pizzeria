@@ -12,6 +12,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
         rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
     <!-- Local Styles -->
     <link rel="stylesheet" href="css/styles.css">
     <!-- Excel Lib -->
@@ -62,6 +63,9 @@
                 <div class="nav-tab" onclick="app.switchTab('history')">Historial</div>
             </div>
             <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="btn"
+                    style="padding: 5px 10px; background: transparent; border: 1px solid #444; color: #888;"
+                    onclick="app.toggleSafeMode()" title="Ocultar datos sensibles">👁️</button>
                 <span id="user-display" style="color: #888; font-size: 0.9rem;"></span>
                 <button class="btn btn-outline" style="padding: 5px 15px; font-size: 0.8rem;"
                     onclick="location.reload()">SALIR</button>

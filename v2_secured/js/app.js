@@ -26,7 +26,8 @@ const APP_STATE = {
         drinks: []
     },
     clients: [],
-    dbRef: null
+    dbRef: null,
+    safeMode: false
 };
 
 const app = {
@@ -119,6 +120,31 @@ const app = {
                 location.reload();
             }
         }, 1000);
+    },
+
+    // --- PRIVACY PROTECTION ---
+    toggleSafeMode: function () {
+        APP_STATE.safeMode = !APP_STATE.safeMode;
+
+        // Target sensitive elements
+        const targets = [
+            '#petty-cash-display',
+            '#cart-total',
+            '#daily-total',
+            '.arqueo-diff',
+            '.stats-card h3 span',
+            '.breakdown-row span:last-child',
+            '#expected-cash-display'
+        ];
+
+        targets.forEach(selector => {
+            document.querySelectorAll(selector).forEach(el => {
+                if (APP_STATE.safeMode) el.classList.add('safe-mode');
+                else el.classList.remove('safe-mode');
+            });
+        });
+
+        this.showToast(APP_STATE.safeMode ? '🔒 Modo Seguro: Datos ocultos' : '🔓 Datos visibles', 'info');
     },
 
     // --- SECURITY & UTILS ---
