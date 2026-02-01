@@ -197,7 +197,7 @@
                             <button class="btn btn-success" onclick="app.sendOrder('paid')">Cobrado y Enviar
                                 (Pagado)</button>
                             <button class="btn btn-outline" style="margin-top: 20px; border-color: #555; color: #888;"
-                                onclick="app.requestCloseShift()">CERRAR TURNO / CAJA</button>
+                                onclick="app.handleShiftAction()">CERRAR TURNO / CAJA</button>
                         </div>
                     </div>
                 </div>
@@ -612,7 +612,7 @@
             <div id="modal-stock" class="modal hidden">
                 <div class="modal-content arqueo-dashboard">
                     <div class="arqueo-header">
-                        <h2 class="brand">Cierre de Caja</h2>
+                        <h2 id="arqueo-title" class="brand">Cierre de Caja</h2>
                     </div>
 
                     <div class="arqueo-body">
@@ -652,7 +652,7 @@
                             </div>
 
                             <div class="arqueo-total-bar">
-                                Total Caja: <span id="calc-total-display">0</span> Gs
+                                <span id="calc-total-label">Total Caja:</span> <span id="calc-total-display">0</span> Gs
                             </div>
                         </div>
 

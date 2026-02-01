@@ -30,150 +30,62 @@ const APP_STATE = {
 };
 
 const app = {
-    // --- NEW CLOSE SHIFT LOGIC (CLEAN IMPLEMENTATION) ---
-    launchNewClose: async function () {
-        // 1. Show Modal
-        document.getElementById('modal-new-close').classList.remove('hidden');
-
-        // 2. Init Calculator (Fresh)
-        const bills = [100000, 50000, 20000];
-        const coins = [10000, 5000, 2000, 1000, 500, 100, 50];
-
-        const renderInput = (v) => `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <span style="color:#888; width: 60px;">${v.toLocaleString()}</span>
-                <input type="number" class="new-cash-input" data-val="${v}" placeholder="0" 
-                       style="width: 80px; background:#111; border:1px solid #444; color:white; padding:5px; text-align:right;"
-                       oninput="app.recalcNewTotal()">
-            </div>`;
-
-        document.getElementById('new-bills-container').innerHTML = bills.map(renderInput).join('');
-        document.getElementById('new-coins-container').innerHTML = coins.map(renderInput).join('');
-
-        // 3. Update Stats
-        this.updateNewCloseStats();
-    },
-
-    recalcNewTotal: function () {
-        let total = 0;
-        document.querySelectorAll('.new-cash-input').forEach(inp => {
-            const val = parseInt(inp.dataset.val);
-            const count = parseInt(inp.value) || 0;
-            total += (val * count);
-        });
-        APP_STATE._newCalcTotal = total;
-        document.getElementById('new-total-counted').textContent = 'Gs. ' + total.toLocaleString();
-        this.updateNewCloseDiff();
-    },
-
-    addNewMovement: function () {
-        const desc = document.getElementById('new-mov-desc').value;
-        const amount = parseInt(document.getElementById('new-mov-amount').value);
-        const type = document.getElementById('new-mov-type').value;
-
-        if (!desc || !amount) return alert("Completa los campos");
-
-        // Save to DB immediately
-        const movement = {
-            type: type,
-            amount: amount,
-            desc: desc,
-            timestamp: new Date().toLocaleTimeString(),
-            date: new Date().toLocaleDateString(),
-            user: APP_STATE.role
-        };
-        APP_STATE.dbRef.root.child('movements').push(movement);
-
-        // Clear
-        document.getElementById('new-mov-desc').value = '';
-        document.getElementById('new-mov-amount').value = '';
-
-        // Refresh Stats
-        setTimeout(() => this.updateNewCloseStats(), 500);
-    },
-
-    updateNewCloseStats: async function () {
-        const stats = await this.getTodayBreakdown();
-        const petty = APP_STATE.pettyCash || 0;
-
-        // Formula: Expected = Petty + Sales + ExtraIn - Expenses
-        // Note: stats.total includes everything, simplified here:
-        // We will trust getTodayBreakdown structure.
-
-        // Re-fetch movements to be sure
-        // We use the same getTodayBreakdown logic which is robust.
-
-        const expected = petty + stats.efectivo + stats.movementsIn - stats.movementsOut;
-        APP_STATE._newExpected = expected;
-        APP_STATE._newStats = stats;
-
-        document.getElementById('summ-petty').textContent = petty.toLocaleString();
-        document.getElementById('summ-sales').textContent = stats.efectivo.toLocaleString();
-        document.getElementById('summ-in').textContent = stats.movementsIn.toLocaleString();
-        document.getElementById('summ-out').textContent = stats.movementsOut.toLocaleString();
-        document.getElementById('summ-expected').textContent = 'Gs. ' + expected.toLocaleString();
-
-        // Render Movements List Preview
-        const movList = document.getElementById('new-mov-list');
-        movList.innerHTML = '';
-        // We would need to fetch them again or user stats. No list needed here requested, just summary.
-
-        this.updateNewCloseDiff();
-    },
-
-    updateNewCloseDiff: function () {
-        const counted = APP_STATE._newCalcTotal || 0;
-        const expected = APP_STATE._newExpected || 0;
-        const diff = counted - expected;
-
-        const el = document.getElementById('summ-diff');
-        if (diff === 0) {
-            el.textContent = "PERFECTO (0)";
-            el.style.color = "#4caf50";
-        } else if (diff < 0) {
-            el.textContent = "FALTANTE: Gs. " + diff.toLocaleString();
-            el.style.color = "#f44336";
+    // --- SHIFT MANAGEMENT (OPEN/CLOSE) ---
+    handleShiftAction: function () {
+        if (!APP_STATE.stockActive) {
+            // Shift is Closed -> OPEN IT
+            this.requestOpenShift();
         } else {
-            el.textContent = "SOBRANTE: + Gs. " + diff.toLocaleString();
-            el.style.color = "#4caf50";
+            // Shift is Open -> CLOSE IT
+            this.requestCloseShift();
         }
     },
 
-    executeNewClose: function () {
-        const counted = APP_STATE._newCalcTotal || 0;
-        const expected = APP_STATE._newExpected || 0;
+    requestOpenShift: function () {
+        document.getElementById('modal-stock').classList.remove('hidden');
 
-        if (counted === 0 && expected > 0) {
-            if (!confirm("No ingresaste efectivo en la calculadora. ¿Seguro que quieres cerrar en 0?")) return;
-        }
+        // Show Opening Config, Hide Diff/Report
+        document.getElementById('opening-fields').classList.remove('hidden');
+        document.getElementById('diff-container').classList.add('hidden');
+        document.getElementById('arqueo-title').textContent = "Apertura de Caja"; // Need to add ID to title or set text
 
-        if (!confirm(`CONFIRMAR CIERRE:\nEsperado: ${expected.toLocaleString()}\nContado: ${counted.toLocaleString()}\nDiferencia: ${(counted - expected).toLocaleString()}`)) return;
+        // Setup Calculator for "Caja Chica" (Petty Cash)
+        // In opening, the calculator is used to count the initial money
+        document.getElementById('calc-total-label').textContent = "Caja Chica Total:";
 
-        // Execute Close
-        // Generate Report
-        const report = `CIERRE DE CAJA\nFecha: ${new Date().toLocaleString()}\n` +
-            `Esperado: ${expected}\nContado: ${counted}\nDiferencia: ${counted - expected}\n` +
-            `----------------\n` +
-            `Ventas Efec: ${APP_STATE._newStats.efectivo}\nGastos: ${APP_STATE._newStats.movementsOut}`;
+        // Clear inputs
+        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
+        document.getElementById('init-stock').value = '';
+        document.getElementById('init-stock-drinks').value = '';
+        this.updateDashTotal();
 
-        const blob = new Blob([report], { type: 'text/plain' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        const safeDate = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
-        link.download = `Cierre_${safeDate}.txt`;
-        document.body.appendChild(link);
-        link.click();
+        // Hide "Volver" button if strictly opening
+        const btnBack = document.getElementById('btn-cancel-opening');
+        if (btnBack) btnBack.classList.add('hidden');
+    },
 
-        // Archive Logic
-        if (APP_STATE._newStats.efectivo > 0) { // Only if there were sales
-            this.archiveOrders();
-        }
+    requestCloseShift: async function () {
+        document.getElementById('modal-stock').classList.remove('hidden');
 
-        // Close
-        firebase.database().ref('config/shopStatus').set({ status: 'closed', timestamp: Date.now() });
-        localStorage.removeItem('ore_pos_state');
-        alert("Cierre Exitoso. Hasta mañana.");
-        location.reload();
+        // Hide Opening Config, Show Diff/Report
+        document.getElementById('opening-fields').classList.add('hidden');
+        document.getElementById('diff-container').classList.remove('hidden');
+        document.getElementById('arqueo-title').textContent = "Cierre de Caja";
+
+        // Setup Calculator for "Total in Box"
+        document.getElementById('calc-total-label').textContent = "Total en Caja:";
+
+        // Show "Volver" button
+        const btnBack = document.getElementById('btn-cancel-opening');
+        if (btnBack) btnBack.classList.remove('hidden');
+
+        // Reset calculator (User must count again)
+        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
+        this.updateDashTotal();
+
+        // Load stats
+        this.renderMovementsDashboard();
+        this.updateCloseShiftBreakdown();
     },
 
     init: function () {
@@ -576,28 +488,20 @@ const app = {
             document.getElementById('view-cashier').classList.remove('hidden');
             document.getElementById('nav-cashier').classList.remove('hidden');
 
-            // FIX: Limpiar estado del día para reiniciar turno
-            // Esto permite cargar la caja chica de nuevo
-            localStorage.removeItem('ore_pos_state');
+            // Rescue State Logic: Check if there are active sales for today
+            const stats = await this.getTodayBreakdown();
+            if (!APP_STATE.stockActive && stats.total > 0) {
+                APP_STATE.stockActive = true;
+                APP_STATE.expectedCash = stats.total; // Approximate recovery
+                this.showToast("⚠️ Sesión restaurada: Se detectaron ventas activas", "warning");
+            }
 
-            // Resetear variables de estado del turno
-            APP_STATE.stock = 0;
-            APP_STATE.stockDrinks = 0;
-            APP_STATE.pettyCash = 0;
-            APP_STATE.expectedCash = 0;
-            APP_STATE.stockActive = false;
-            APP_STATE.shiftSales = {
-                total: 0,
-                efectivo: 0,
-                transfer: 0,
-                deliveryFees: 0,
-                deliveryEfectivo: 0,
-                deliveryTransfer: 0,
-                items: {}
-            };
-
-            // SIEMPRE mostrar modal de arqueo de caja al iniciar sesión
-            this.requestOpenShift();
+            // Only request open shift if stock not active (restored state check)
+            if (!APP_STATE.stockActive) {
+                this.requestOpenShift();
+            } else {
+                document.getElementById('diff-container').classList.remove('hidden'); // Show standard dash
+            }
             this.listenOrdersGeneric();
         } else if (role === 'chef') {
             document.getElementById('view-chef').classList.remove('hidden');
@@ -2073,6 +1977,16 @@ const app = {
         // Restore drink stock
         const drinksCount = order.items.filter(i => i.type === 'drink').length;
         APP_STATE.stockDrinks += drinksCount;
+
+        // PERSIST RESTORED STOCK TO DB
+        const stockRef = firebase.database().ref('stock');
+        stockRef.transaction(current => {
+            if (!current) return;
+            return {
+                masas: (current.masas || 0) + pizzasCount,
+                drinks: (current.drinks || 0) + drinksCount
+            };
+        });
 
         this.updateStockUI();
 
