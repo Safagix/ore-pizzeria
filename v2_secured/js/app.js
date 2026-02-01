@@ -57,10 +57,6 @@ const app = {
 
             // M3 FIX: Auto-save shift state every 30 seconds
             setInterval(() => this.saveLocalState(), 30000);
-
-            // NEW: Initialize Connection Monitoring
-            this.initConnectionMonitoring();
-
         } catch (e) {
             console.error(e);
             this.showToast('Error conectando a DB', 'error');
@@ -105,93 +101,6 @@ const app = {
                 }
             }
         });
-    },
-
-    // --- CONNECTION & PRESENCE (NEW) ---
-    initConnectionMonitoring: function () {
-        // Monitor own connection state
-        const connectedRef = firebase.database().ref('.info/connected');
-        connectedRef.on('value', (snap) => {
-            const isConnected = snap.val() === true;
-            this.updateMyStatusUI(isConnected);
-
-            // If logged in, update presence in DB
-            if (isConnected && APP_STATE.role) {
-                this.updatePresenceInDB(APP_STATE.role);
-            }
-        });
-    },
-
-    updatePresenceInDB: function (role) {
-        // We only track Cashier and Chef for coordination
-        if (role !== 'cashier' && role !== 'chef') return;
-
-        const userStatusRef = firebase.database().ref(`presence/${role}`);
-
-        // Mark online
-        userStatusRef.set({
-            online: true,
-            lastSeen: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        // Mark offline on disconnect
-        userStatusRef.onDisconnect().set({
-            online: false,
-            lastSeen: firebase.database.ServerValue.TIMESTAMP
-        });
-    },
-
-    listenPeerStatus: function (myRole) {
-        let peerRole = '';
-        let peerLabel = '';
-
-        if (myRole === 'cashier') {
-            peerRole = 'chef';
-            peerLabel = '👨‍🍳 Chef';
-        } else if (myRole === 'chef') {
-            peerRole = 'cashier';
-            peerLabel = '🛒 Caja';
-        } else {
-            return; // Admin/Service don't need peer monitoring
-        }
-
-        const peerRef = firebase.database().ref(`presence/${peerRole}`);
-        document.getElementById('peer-label').textContent = peerLabel;
-
-        peerRef.on('value', (snap) => {
-            const data = snap.val();
-            const isOnline = data && data.online === true;
-            this.updatePeerStatusUI(isOnline);
-        });
-    },
-
-    updateMyStatusUI: function (isOnline) {
-        const dot = document.getElementById('status-dot-me');
-        const text = document.getElementById('status-text-me');
-        if (!dot || !text) return;
-
-        if (isOnline) {
-            dot.style.background = '#4caf50'; // Green
-            dot.style.boxShadow = '0 0 5px #4caf50';
-            text.textContent = 'En Línea';
-        } else {
-            dot.style.background = '#f44336'; // Red
-            dot.style.boxShadow = 'none';
-            text.textContent = 'Sin Red';
-        }
-    },
-
-    updatePeerStatusUI: function (isOnline) {
-        const dot = document.getElementById('status-dot-peer');
-        if (!dot) return;
-
-        if (isOnline) {
-            dot.style.background = '#4caf50';
-            dot.style.boxShadow = '0 0 5px #4caf50';
-        } else {
-            dot.style.background = '#777'; // Gray/Red
-            dot.style.boxShadow = 'none';
-        }
     },
 
     triggerGoodJob: function () {
@@ -487,82 +396,6 @@ const app = {
         });
     },
 
-    // --- SHIFT MANAGEMENT ---
-    requestOpenShift: function () {
-        document.getElementById('modal-stock').classList.remove('hidden');
-        document.getElementById('opening-fields').classList.remove('hidden');
-        document.getElementById('diff-container').classList.add('hidden');
-        document.getElementById('bills-body').closest('div').parentElement.style.display = 'grid';
-
-        // Hide "Volver a Ventas" during opening to prevent bypass
-        const btnBack = document.getElementById('btn-cancel-opening');
-        if (btnBack) btnBack.classList.add('hidden');
-    },
-
-    requestCloseShift: async function () {
-        console.log("requestCloseShift called"); // DEBUG
-        document.getElementById('modal-stock').classList.remove('hidden');
-        document.getElementById('opening-fields').classList.add('hidden');
-        document.getElementById('diff-container').classList.remove('hidden');
-        document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
-
-        // Show "Volver a Ventas" during closing
-        const btnBack = document.getElementById('btn-cancel-opening');
-        if (btnBack) btnBack.classList.remove('hidden');
-
-        // Reset calculator
-        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
-        this.updateDashTotal();
-
-        // Load movements
-        this.renderMovementsDashboard();
-
-        // Calculate and Show Breakdown
-        this.updateCloseShiftBreakdown();
-    },
-
-    updateCloseShiftBreakdown: async function () {
-        try {
-            const stats = await this.getTodayBreakdown();
-
-            // Defensive null checks to prevent silent failures
-            const setPetty = document.getElementById('detail-petty-cash');
-            if (setPetty) setPetty.textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
-
-            // Use DB Stats for reliability
-            const setTotal = document.getElementById('detail-total-sales');
-            if (setTotal) setTotal.textContent = `Gs. ${stats.total.toLocaleString()}`;
-
-            const setPizzas = document.getElementById('detail-pizzas');
-            if (setPizzas) setPizzas.textContent = `Gs. ${stats.pizza.toLocaleString()}`;
-
-            const setDrinks = document.getElementById('detail-drinks');
-            if (setDrinks) setDrinks.textContent = `Gs. ${stats.drink.toLocaleString()}`;
-
-            const setDelivery = document.getElementById('detail-delivery');
-            if (setDelivery) setDelivery.textContent = `Gs. ${stats.delivery.toLocaleString()}`;
-
-            // Movements UI
-            const setIncome = document.getElementById('detail-income');
-            if (setIncome) setIncome.textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
-
-            const setExpense = document.getElementById('detail-expense');
-            if (setExpense) setExpense.textContent = `Gs. ${stats.movementsOut.toLocaleString()}`;
-
-            // Correct Formula: 
-            // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
-            // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
-            const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
-
-            const setExpected = document.getElementById('expected-cash-display');
-            if (setExpected) setExpected.textContent = `Gs. ${newExpected.toLocaleString()}`;
-            APP_STATE.expectedCash = newExpected;
-        } catch (error) {
-            console.error('Error en updateCloseShiftBreakdown:', error);
-            this.showToast('Error cargando datos de cierre', 'error');
-        }
-    },
-
     // --- AUTH & NAV ---
     login: async function () {
         const role = document.getElementById('role-select').value;
@@ -596,12 +429,6 @@ const app = {
         if (role === 'cashier') {
             document.getElementById('view-cashier').classList.remove('hidden');
             document.getElementById('nav-cashier').classList.remove('hidden');
-            document.getElementById('connection-status').classList.remove('hidden'); // Show indicator
-            document.getElementById('connection-status').style.display = 'flex';
-
-            // Start tracking Chef
-            this.updatePresenceInDB('cashier');
-            this.listenPeerStatus('cashier');
 
             // Only request open shift if stock not active (restored state check)
             if (!APP_STATE.stockActive) {
@@ -612,13 +439,6 @@ const app = {
             this.listenOrdersGeneric();
         } else if (role === 'chef') {
             document.getElementById('view-chef').classList.remove('hidden');
-            document.getElementById('connection-status').classList.remove('hidden'); // Show indicator
-            document.getElementById('connection-status').style.display = 'flex';
-
-            // Start tracking Cashier
-            this.updatePresenceInDB('chef');
-            this.listenPeerStatus('chef');
-
             this.listenChef();
         } else if (role === 'admin') {
             document.getElementById('view-admin').classList.remove('hidden');

@@ -1,0 +1,9 @@
+{
+    "name": "Ore Pizzeria POS",
+    "short_name": "Ore POS",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#c5a059",
+    "icons": []
+}

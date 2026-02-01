@@ -29,10 +29,6 @@
         "config": {
             ".read": "auth != null",
             ".write": "auth != null"
-        },
-        "presence": {
-            ".read": "auth != null",
-            ".write": "auth != null"
         }
     }
 }
