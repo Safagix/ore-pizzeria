@@ -430,6 +430,11 @@ const app = {
     setStock: function () {
         const s = parseInt(document.getElementById('init-stock').value);
         const d = parseInt(document.getElementById('init-stock-drinks').value) || 0;
+
+        // Validation: Integrity of Inventory (Vuln Mitigation)
+        if (s < 0 || d < 0) {
+            return alert("Error de Integridad: El stock no puede ser negativo.");
+        }
         const calcTotal = APP_STATE._currentCalcTotal || 0;
 
         if (isNaN(s)) return alert("Debes ingresar el stock de masas para abrir el turno");
@@ -1530,7 +1535,19 @@ const app = {
         let deliveryFee = 0;
         if (orderType === 'Delivery') {
             deliveryFee = parseInt(document.getElementById('delivery-fee').value) || 0;
+            if (deliveryFee < 0) return alert("El costo de delivery no puede ser negativo.");
         }
+
+        // Validation: Financial Integrity (Vuln Mitigation)
+        // Check for price manipulation or zero-priced items
+        const hasInvalidPrice = APP_STATE.cart.some(item => {
+            return typeof item.price !== 'number' || item.price <= 0 || isNaN(item.price);
+        });
+
+        if (hasInvalidPrice) {
+            return alert("Error de Integridad: Se detectaron productos con precio inválido (0 o negativo) en el pedido. Por favor verifica el carrito.");
+        }
+
         const paymentMethod = document.getElementById('payment-method').value;
 
         const isEditing = APP_STATE._editingOrderKey !== null;
