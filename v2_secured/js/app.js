@@ -569,30 +569,26 @@ const app = {
 
     requestCloseShift: async function () {
         document.getElementById('modal-stock').classList.remove('hidden');
-        document.getElementById('opening-fields').classList.add('hidden');
-        document.getElementById('diff-container').classList.remove('hidden');
-        document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
+        if (confirm("¿Estás seguro de que deseas cerrar el turno y la caja?")) {
+            try {
+                // 1. Update Shop Status
+                await firebase.database().ref('config/shopStatus').set({
+                    status: 'closed',
+                    timestamp: Date.now(),
+                    lastClosedBy: APP_STATE.role
+                });
 
-        // FORCE VISIBILITY OF CALCULATOR (Fix for empty modal issue)
-        const billsBody = document.getElementById('bills-body');
-        if (billsBody) {
-            const row = billsBody.closest('.arqueo-tables-row') || billsBody.closest('div').parentElement;
-            if (row) row.style.display = 'flex';
+                // 2. Clear Session and Reload
+                localStorage.removeItem('ore_pos_state');
+
+                // 3. Show Feedback
+                this.showToast("✅ Turno cerrado correctamente", "success");
+                setTimeout(() => location.reload(), 1500);
+            } catch (e) {
+                console.error("Error closing shift:", e);
+                alert("Error al cerrar turno: " + e.message);
+            }
         }
-
-        // Show "Volver a Ventas" during closing
-        const btnBack = document.getElementById('btn-cancel-opening');
-        if (btnBack) btnBack.classList.remove('hidden');
-
-        // Reset calculator
-        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
-        this.updateDashTotal();
-
-        // Load movements
-        this.renderMovementsDashboard();
-
-        // Calculate and Show Breakdown
-        this.updateCloseShiftBreakdown();
     },
 
     updateCloseShiftBreakdown: async function () {
@@ -2179,7 +2175,10 @@ const app = {
     }
 };
 
+
+
 // Auto init
+
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
