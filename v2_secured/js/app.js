@@ -487,6 +487,81 @@ const app = {
         });
     },
 
+    // --- SHIFT MANAGEMENT ---
+    requestOpenShift: function () {
+        document.getElementById('modal-stock').classList.remove('hidden');
+        document.getElementById('opening-fields').classList.remove('hidden');
+        document.getElementById('diff-container').classList.add('hidden');
+        document.getElementById('bills-body').closest('div').parentElement.style.display = 'grid';
+
+        // Hide "Volver a Ventas" during opening to prevent bypass
+        const btnBack = document.getElementById('btn-cancel-opening');
+        if (btnBack) btnBack.classList.add('hidden');
+    },
+
+    requestCloseShift: async function () {
+        document.getElementById('modal-stock').classList.remove('hidden');
+        document.getElementById('opening-fields').classList.add('hidden');
+        document.getElementById('diff-container').classList.remove('hidden');
+        document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
+
+        // Show "Volver a Ventas" during closing
+        const btnBack = document.getElementById('btn-cancel-opening');
+        if (btnBack) btnBack.classList.remove('hidden');
+
+        // Reset calculator
+        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
+        this.updateDashTotal();
+
+        // Load movements
+        this.renderMovementsDashboard();
+
+        // Calculate and Show Breakdown
+        this.updateCloseShiftBreakdown();
+    },
+
+    updateCloseShiftBreakdown: async function () {
+        try {
+            const stats = await this.getTodayBreakdown();
+
+            // Defensive null checks to prevent silent failures
+            const setPetty = document.getElementById('detail-petty-cash');
+            if (setPetty) setPetty.textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
+
+            // Use DB Stats for reliability
+            const setTotal = document.getElementById('detail-total-sales');
+            if (setTotal) setTotal.textContent = `Gs. ${stats.total.toLocaleString()}`;
+
+            const setPizzas = document.getElementById('detail-pizzas');
+            if (setPizzas) setPizzas.textContent = `Gs. ${stats.pizza.toLocaleString()}`;
+
+            const setDrinks = document.getElementById('detail-drinks');
+            if (setDrinks) setDrinks.textContent = `Gs. ${stats.drink.toLocaleString()}`;
+
+            const setDelivery = document.getElementById('detail-delivery');
+            if (setDelivery) setDelivery.textContent = `Gs. ${stats.delivery.toLocaleString()}`;
+
+            // Movements UI
+            const setIncome = document.getElementById('detail-income');
+            if (setIncome) setIncome.textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
+
+            const setExpense = document.getElementById('detail-expense');
+            if (setExpense) setExpense.textContent = `Gs. ${stats.movementsOut.toLocaleString()}`;
+
+            // Correct Formula: 
+            // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
+            // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
+            const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
+
+            const setExpected = document.getElementById('expected-cash-display');
+            if (setExpected) setExpected.textContent = `Gs. ${newExpected.toLocaleString()}`;
+            APP_STATE.expectedCash = newExpected;
+        } catch (error) {
+            console.error('Error en updateCloseShiftBreakdown:', error);
+            this.showToast('Error cargando datos de cierre', 'error');
+        }
+    },
+
     // --- AUTH & NAV ---
     login: async function () {
         const role = document.getElementById('role-select').value;
