@@ -719,6 +719,9 @@ const app = {
             const setExpected = document.getElementById('expected-cash-display');
             if (setExpected) setExpected.textContent = `Gs. ${newExpected.toLocaleString()}`;
             APP_STATE.expectedCash = newExpected;
+
+            // Sync difference display
+            this.updateDashTotal();
         } catch (error) {
             console.error('Error en updateCloseShiftBreakdown:', error);
             this.showToast('Error cargando datos de cierre', 'error');
@@ -991,7 +994,8 @@ const app = {
 
             ordersSnap.forEach(child => {
                 const order = child.val();
-                if (order.status === 'completed' && order.payStatus === 'paid') {
+                const status = order.status || 'cooking';
+                if ((status === 'completed' || status === 'ready') && order.payStatus === 'paid') {
                     const archiveRef = firebase.database().ref(`orders_archive/${safeDate}/${child.key}`);
                     archivePromises.push(
                         archiveRef.set(order).then(() => child.ref.remove())
