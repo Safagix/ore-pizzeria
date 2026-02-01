@@ -762,20 +762,7 @@ const app = {
                 return;
             }
 
-            // --- CONFIRMATION DIALOG (Moved to Top) ---
-            const confirmMsg = `CONFIRMAR CIERRE DE CAJA\n` +
-                `---------------------------\n` +
-                `Total Esperado: Gs. ${expected.toLocaleString()}\n` +
-                `Total Contado:  Gs. ${counted.toLocaleString()}\n` +
-                `---------------------------\n` +
-                `DIFERENCIA:    Gs. ${(counted - expected).toLocaleString()}\n` +
-                `---------------------------\n` +
-                `¿Está seguro de cerrar el turno?`;
-
-            if (!confirm(confirmMsg)) {
-                return;
-            }
-
+            this.showToast("🔒 Procesando cierre...", "info");
             const todayStr = new Date().toLocaleDateString();
 
             // 1. Fetch Movements
