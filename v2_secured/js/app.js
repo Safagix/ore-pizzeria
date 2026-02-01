@@ -1224,11 +1224,8 @@ const app = {
     // --- DB MAINTENANCE (PRO V2) ---
     checkDBHealth: async function () {
         // Count entries in background
-        const snap = await APP_STATE.dbRef.shallow().once('value'); // Shallow fetch keys only if possible (Firebase RTDB shallow support is limited mostly to REST, but SDK does full fetch unless using REST).
-        // Since JS SDK doesn't support true shallow count without download, for Free Tier safety, we will restrict to checking metadata if available, OR just download all keys (minimal bandwidth compared to full objects).
-        // For this implementation, we will fetch order KEYS only using REST API logic if possible, but standard SDK method:
-        // We will orderByKey and limitToLast(1) to get the latest, but to COUNT we need more.
-        // Practical approach for small DBs: Fetch all keys. 
+        // Removed shallow() as it is not supported in client SDK. using standard once() below.
+
 
         document.getElementById('db-total-orders').textContent = "Analizando...";
 
