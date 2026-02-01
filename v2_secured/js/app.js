@@ -516,47 +516,84 @@ const app = {
     },
 
     setStock: function () {
-        const s = parseInt(document.getElementById('init-stock').value);
-        const d = parseInt(document.getElementById('init-stock-drinks').value) || 0;
-        const calcTotal = APP_STATE._currentCalcTotal || 0;
+        const s = document.getElementById('init-stock').value;
+        const d = document.getElementById('init-stock-drinks').value;
 
-        if (isNaN(s)) return alert("Debes ingresar el stock de masas para abrir el turno");
-        if (calcTotal === 0) if (!confirm("¿Deseas abrir la caja con Gs. 0?")) return;
+        if (!s || !d) return alert("Ingresa stock inicial");
 
-
-        APP_STATE.stock = s;
-        APP_STATE.stockDrinks = d;
-        APP_STATE.pettyCash = calcTotal;
-        APP_STATE.expectedCash = calcTotal;
         APP_STATE.stockActive = true;
+        APP_STATE.productsLines = parseInt(s);
+        APP_STATE.productsDrinks = parseInt(d);
 
-        // Reset shift stats
-        APP_STATE.shiftSales = {
-            total: 0,
-            efectivo: 0,
-            transfer: 0,
-            deliveryFees: 0,
-            deliveryEfectivo: 0,
-            deliveryTransfer: 0,
-            items: {}
-        };
-
-        // Fix: Sync Initial Stock to DB (Vuln 5)
+        // Fix: Sync Initial Stock to DB
         firebase.database().ref('stock').set({
-            masas: s,
-            drinks: d
+            masas: APP_STATE.productsLines,
+            drinks: APP_STATE.productsDrinks
         });
 
         // Reset shop status to open
         firebase.database().ref('config/shopStatus').set({ status: 'open', timestamp: Date.now() });
 
         this.updateStockUI();
-        this.saveLocalState(); // Fix: Persist state
+        this.saveLocalState();
         document.getElementById('modal-stock').classList.add('hidden');
         alert(`Turno Abierto. Stock sincronizado: ${s} masas, ${d} bebidas.`);
     },
 
+    // --- SHIFT MANAGEMENT (OPEN/CLOSE) ---
+    handleShiftAction: function () {
+        console.log("handleShiftAction triggered");
+        try {
+            if (!APP_STATE.stockActive) {
+                // If system thinks shift is closed, try to open
+                console.log("State: Shift Closed -> Request Open");
+                this.requestOpenShift();
+            } else {
+                // Shift is Open -> CLOSE IT
+                console.log("State: Shift Open -> Request Close");
+                this.requestCloseShift();
+            }
+        } catch (error) {
+            console.error("Critical Error in handleShiftAction:", error);
+            alert("Error del sistema en botón Turno: " + error.message);
+        }
+    },
+
     requestOpenShift: function () {
+        const m = document.getElementById('modal-stock');
+        if (!m) return alert("Error: No se encuentra la ventana de apertura.");
+
+        m.classList.remove('hidden');
+        document.getElementById('opening-fields').classList.remove('hidden');
+        document.getElementById('diff-container').classList.add('hidden');
+
+        const btnBack = document.getElementById('btn-cancel-opening');
+        if (btnBack) btnBack.classList.add('hidden');
+    },
+
+    requestCloseShift: async function () {
+        if (confirm("⚠️ ¿CONFIRMAR CIERRE DE CAJA?\nSe cerrará la sesión actual.")) {
+            try {
+                this.showToast("⏳ Procesando cierre...", "info");
+
+                await firebase.database().ref('config/shopStatus').set({
+                    status: 'closed',
+                    timestamp: Date.now(),
+                    lastClosedBy: APP_STATE.role
+                });
+
+                localStorage.removeItem('ore_pos_state');
+                location.reload();
+            } catch (e) {
+                console.error("Error closing shift:", e);
+                alert("Error de conexión al cerrar: " + e.message);
+                localStorage.removeItem('ore_pos_state');
+                location.reload();
+            }
+        }
+    },
+
+    updateCloseShiftBreakdown: async function () {
         document.getElementById('modal-stock').classList.remove('hidden');
         document.getElementById('opening-fields').classList.remove('hidden');
         document.getElementById('diff-container').classList.add('hidden');
