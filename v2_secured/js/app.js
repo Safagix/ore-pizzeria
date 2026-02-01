@@ -1246,7 +1246,13 @@ const app = {
             const cardEl = document.getElementById('db-health-card');
             const barEl = document.getElementById('db-usage-bar');
 
-            if (count < 3000) {
+            if (count === 0) {
+                statusEl.textContent = "Impecable";
+                msgEl.textContent = "Base de datos vacía y optimizada al 100%.";
+                iconEl.textContent = "✨";
+                cardEl.style.borderLeftColor = "#00bcd4"; // Cyan/Gold
+                barEl.style.backgroundColor = "#00bcd4";
+            } else if (count < 3000) {
                 statusEl.textContent = "Saludable";
                 msgEl.textContent = "Uso bajo de recursos. Todo en orden.";
                 iconEl.textContent = "✅";
