@@ -810,6 +810,21 @@ const app = {
 
             const finalReport = report + splitReport;
 
+            // --- CONFIRMATION DIALOG (New Feature) ---
+            const confirmMsg = `CONFIRMAR CIERRE DE CAJA\n` +
+                `---------------------------\n` +
+                `Total Esperado: Gs. ${APP_STATE.expectedCash.toLocaleString()}\n` +
+                `Total Contado:  Gs. ${counted.toLocaleString()}\n` +
+                `---------------------------\n` +
+                `DIFERENCIA:    Gs. ${(counted - APP_STATE.expectedCash).toLocaleString()}\n` +
+                `---------------------------\n` +
+                `¿Está seguro de cerrar el turno?`;
+
+            if (!confirm(confirmMsg)) {
+                console.log("Cierre cancelado por el usuario.");
+                return;
+            }
+
             // 4. Download Report
             const blob = new Blob([finalReport], { type: 'text/plain' });
             const link = document.createElement('a');
