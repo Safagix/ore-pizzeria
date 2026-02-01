@@ -515,6 +515,13 @@ const app = {
         document.getElementById('diff-container').classList.remove('hidden');
         document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
 
+        // FORCE VISIBILITY OF CALCULATOR (Fix for empty modal issue)
+        const billsBody = document.getElementById('bills-body');
+        if (billsBody) {
+            const row = billsBody.closest('.arqueo-tables-row') || billsBody.closest('div').parentElement;
+            if (row) row.style.display = 'flex';
+        }
+
         // Show "Volver a Ventas" during closing
         const btnBack = document.getElementById('btn-cancel-opening');
         if (btnBack) btnBack.classList.remove('hidden');
