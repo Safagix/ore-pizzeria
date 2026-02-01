@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1a1a1a">
     <title>Ore Artesanal | POS</title>
     <!-- Fonts -->
@@ -197,7 +197,7 @@
                             <button class="btn btn-success" onclick="app.sendOrder('paid')">Cobrado y Enviar
                                 (Pagado)</button>
                             <button class="btn btn-outline" style="margin-top: 20px; border-color: #555; color: #888;"
-                                onclick="app.handleShiftAction()">CERRAR TURNO / CAJA</button>
+                                onclick="app.requestCloseShift()">CERRAR TURNO / CAJA</button>
                         </div>
                     </div>
                 </div>
@@ -488,7 +488,143 @@
                 </div>
             </div>
 
+            <div id="modal-stock" class="modal hidden">
+                <div class="modal-content arqueo-dashboard">
+                    <div class="arqueo-header">
+                        <h2 class="brand">Cierre de Caja</h2>
+                    </div>
 
+                    <div class="arqueo-body">
+                        <!-- Panel Izquierdo: Calculadora -->
+                        <div class="arqueo-calc-panel">
+                            <h3>Calculadora de Billetes (Gs)</h3>
+
+                            <div class="arqueo-tables-row">
+                                <!-- Billetes -->
+                                <div class="arqueo-table-col">
+                                    <p class="table-title">Billetes</p>
+                                    <table class="arqueo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Denom</th>
+                                                <th>Cant</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bills-body"></tbody>
+                                    </table>
+                                </div>
+                                <!-- Monedas -->
+                                <div class="arqueo-table-col">
+                                    <p class="table-title">Monedas</p>
+                                    <table class="arqueo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Denom</th>
+                                                <th>Cant</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="coins-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="arqueo-total-bar">
+                                Total Caja: <span id="calc-total-display">0</span> Gs
+                            </div>
+                        </div>
+
+                        <!-- Panel Derecho: Movimientos -->
+                        <div class="arqueo-mov-panel">
+                            <h3>Registro Movimientos</h3>
+
+                            <div class="arqueo-mov-form">
+                                <input type="text" id="dash-mov-desc" placeholder="Descripción">
+                                <input type="number" id="dash-mov-amount" placeholder="Monto">
+                                <select id="dash-mov-type">
+                                    <option value="ingreso">Ingreso</option>
+                                    <option value="egreso">Egreso</option>
+                                </select>
+                                <button class="btn btn-gold" onclick="app.saveMovementDashboard()">Agregar</button>
+                            </div>
+
+                            <div id="dash-mov-list" class="arqueo-mov-list"></div>
+
+                            <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
+
+                            <div id="diff-container" class="arqueo-diff hidden"
+                                style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px;">
+                                <div
+                                    style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
+                                    DETALLE ESPERADO</div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
+                                    <span>Caja Chica (Inicio):</span><span id="detail-petty-cash">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
+                                    <span>Total Ventas:</span><span id="detail-total-sales">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                    <span>• Pizzas:</span><span id="detail-pizzas">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                    <span>• Bebidas:</span><span id="detail-drinks">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
+                                    <span>• Delivery:</span><span id="detail-delivery">0</span>
+                                </div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--success);">
+                                    <span>+ Ingresos Extra:</span><span id="detail-income">0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #f44336;">
+                                    <span>- Gastos/Retiros:</span><span id="detail-expense">0</span>
+                                </div>
+
+                                <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
+
+                                <div
+                                    style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
+                                    <span>TOTAL EN CAJA:</span><span id="expected-cash-display"
+                                        style="color: var(--success);">--</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
+                                    <span>DIFERENCIA:</span><span id="diff-display">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arqueo-footer">
+                        <button id="btn-cancel-opening" class="btn btn-outline" style="border-color: #666; color: #ccc;"
+                            onclick="app.closeModal('modal-stock')">← VOLVER A VENTAS</button>
+                        <button class="btn btn-gold" onclick="app.closeShift()">Cerrar Caja</button>
+                    </div>
+
+                    <!-- Apertura fields (hidden by default) -->
+                    <div id="opening-fields" class="hidden arqueo-opening">
+                        <h3 class="brand">Configuración de Apertura</h3>
+                        <div class="opening-grid">
+                            <div><label>Stock Masas</label><input type="number" id="init-stock" placeholder="0"></div>
+                            <div><label>Stock Bebidas</label><input type="number" id="init-stock-drinks"
+                                    placeholder="0">
+                            </div>
+                        </div>
+                        <button class="btn btn-gold" style="width: 100%; margin-top: 15px;"
+                            onclick="app.setStock()">INICIAR
+                            TURNO</button>
+                    </div>
+                </div>
+            </div>
 
             <!-- SIDEBAR UPDATE (Add Close Session) -->
             <style>
@@ -608,145 +744,6 @@
                 </div>
             </div>
 
-            <!-- MODAL STOCK MOVED HERE -->
-            <div id="modal-stock" class="modal hidden">
-                <div class="modal-content arqueo-dashboard">
-                    <div class="arqueo-header">
-                        <h2 id="arqueo-title" class="brand">Cierre de Caja</h2>
-                    </div>
-
-                    <div class="arqueo-body">
-                        <!-- Panel Izquierdo: Calculadora -->
-                        <div class="arqueo-calc-panel">
-                            <h3>Calculadora de Billetes (Gs)</h3>
-
-                            <div class="arqueo-tables-row">
-                                <!-- Billetes -->
-                                <div class="arqueo-table-col">
-                                    <p class="table-title">Billetes</p>
-                                    <table class="arqueo-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Denom</th>
-                                                <th>Cant</th>
-                                                <th>Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="bills-body"></tbody>
-                                    </table>
-                                </div>
-                                <!-- Monedas -->
-                                <div class="arqueo-table-col">
-                                    <p class="table-title">Monedas</p>
-                                    <table class="arqueo-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Denom</th>
-                                                <th>Cant</th>
-                                                <th>Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="coins-body"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <div class="arqueo-total-bar">
-                                <span id="calc-total-label">Total Caja:</span> <span id="calc-total-display">0</span> Gs
-                            </div>
-                        </div>
-
-                        <!-- Panel Derecho: Movimientos -->
-                        <div class="arqueo-mov-panel">
-                            <h3>Registro Movimientos</h3>
-
-                            <div class="arqueo-mov-form">
-                                <input type="text" id="dash-mov-desc" placeholder="Descripción">
-                                <input type="number" id="dash-mov-amount" placeholder="Monto">
-                                <select id="dash-mov-type">
-                                    <option value="ingreso">Ingreso</option>
-                                    <option value="egreso">Egreso</option>
-                                </select>
-                                <button class="btn btn-gold" onclick="app.saveMovementDashboard()">Agregar</button>
-                            </div>
-
-                            <div id="dash-mov-list" class="arqueo-mov-list"></div>
-
-                            <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
-
-                            <div id="diff-container" class="arqueo-diff hidden"
-                                style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px;">
-                                <div
-                                    style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
-                                    DETALLE ESPERADO</div>
-
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
-                                    <span>Caja Chica (Inicio):</span><span id="detail-petty-cash">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
-                                    <span>Total Ventas:</span><span id="detail-total-sales">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                    <span>• Pizzas:</span><span id="detail-pizzas">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                    <span>• Bebidas:</span><span id="detail-drinks">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                    <span>• Delivery:</span><span id="detail-delivery">0</span>
-                                </div>
-
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--success);">
-                                    <span>+ Ingresos Extra:</span><span id="detail-income">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #f44336;">
-                                    <span>- Gastos/Retiros:</span><span id="detail-expense">0</span>
-                                </div>
-
-                                <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
-
-                                <div
-                                    style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
-                                    <span>TOTAL EN CAJA:</span><span id="expected-cash-display"
-                                        style="color: var(--success);">--</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
-                                    <span>DIFERENCIA:</span><span id="diff-display">--</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="arqueo-footer">
-                        <button id="btn-cancel-opening" class="btn btn-outline" style="border-color: #666; color: #ccc;"
-                            onclick="app.closeModal('modal-stock')">← VOLVER A VENTAS</button>
-                        <button class="btn btn-gold" onclick="app.closeShift()">Cerrar Caja</button>
-                    </div>
-
-                    <!-- Apertura fields (hidden by default) -->
-                    <div id="opening-fields" class="hidden arqueo-opening">
-                        <h3 class="brand">Configuración de Apertura</h3>
-                        <div class="opening-grid">
-                            <div><label>Stock Masas</label><input type="number" id="init-stock" placeholder="0"></div>
-                            <div><label>Stock Bebidas</label><input type="number" id="init-stock-drinks"
-                                    placeholder="0">
-                            </div>
-                        </div>
-                        <button class="btn btn-gold" style="width: 100%; margin-top: 15px;"
-                            onclick="app.setStock()">INICIAR
-                            TURNO</button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Modal: Good Job (End of Shift) -->
             <div id="modal-good-job" class="modal hidden" style="background: rgba(0,0,0,0.98);">
                 <div style="text-align: center; color: white; animation: fade-in 1s;">
@@ -759,28 +756,6 @@
                         Cerrando sistema en <span id="shutdown-timer"
                             style="color: var(--primary-gold); font-weight: bold; font-size: 1.2rem;">5</span>
                         segundos...
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- SIMPLE WHITE SQUARE MODAL -->
-            <div id="modal-white-confirmation" class="modal hidden"
-                style="z-index: 20000; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
-                <div
-                    style="background: white; width: 300px; padding: 30px; border-radius: 4px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                    <h3 style="color: black; margin-top: 0;">¿Cerrar Turno?</h3>
-                    <p style="color: #666; margin-bottom: 25px;">Se cerrará la sesión actual.</p>
-
-                    <div style="display: flex; gap: 10px;">
-                        <button onclick="document.getElementById('modal-white-confirmation').classList.add('hidden')"
-                            style="flex: 1; padding: 10px; background: #eee; border: none; color: #333; font-weight: bold; cursor: pointer; border-radius: 4px;">
-                            CANCELAR
-                        </button>
-                        <button onclick="app.confirmCloseShift()"
-                            style="flex: 1; padding: 10px; background: #d32f2f; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 4px;">
-                            CERRAR
-                        </button>
                     </div>
                 </div>
             </div>

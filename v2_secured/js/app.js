@@ -30,64 +30,6 @@ const APP_STATE = {
 };
 
 const app = {
-    // --- SHIFT MANAGEMENT (OPEN/CLOSE) ---
-    handleShiftAction: function () {
-        if (!APP_STATE.stockActive) {
-            // Shift is Closed -> OPEN IT
-            this.requestOpenShift();
-        } else {
-            // Shift is Open -> CLOSE IT
-            this.requestCloseShift();
-        }
-    },
-
-    requestOpenShift: function () {
-        document.getElementById('modal-stock').classList.remove('hidden');
-
-        // Show Opening Config, Hide Diff/Report
-        document.getElementById('opening-fields').classList.remove('hidden');
-        document.getElementById('diff-container').classList.add('hidden');
-        document.getElementById('arqueo-title').textContent = "Apertura de Caja"; // Need to add ID to title or set text
-
-        // Setup Calculator for "Caja Chica" (Petty Cash)
-        // In opening, the calculator is used to count the initial money
-        document.getElementById('calc-total-label').textContent = "Caja Chica Total:";
-
-        // Clear inputs
-        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
-        document.getElementById('init-stock').value = '';
-        document.getElementById('init-stock-drinks').value = '';
-        this.updateDashTotal();
-
-        // Hide "Volver" button if strictly opening
-        const btnBack = document.getElementById('btn-cancel-opening');
-        if (btnBack) btnBack.classList.add('hidden');
-    },
-
-    requestCloseShift: async function () {
-        document.getElementById('modal-stock').classList.remove('hidden');
-
-        // Hide Opening Config, Show Diff/Report
-        document.getElementById('opening-fields').classList.add('hidden');
-        document.getElementById('diff-container').classList.remove('hidden');
-        document.getElementById('arqueo-title').textContent = "Cierre de Caja";
-
-        // Setup Calculator for "Total in Box"
-        document.getElementById('calc-total-label').textContent = "Total en Caja:";
-
-        // Show "Volver" button
-        const btnBack = document.getElementById('btn-cancel-opening');
-        if (btnBack) btnBack.classList.remove('hidden');
-
-        // Reset calculator (User must count again)
-        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
-        this.updateDashTotal();
-
-        // Load stats
-        this.renderMovementsDashboard();
-        this.updateCloseShiftBreakdown();
-    },
-
     init: function () {
         const loader = document.getElementById('loader');
         try {
@@ -112,35 +54,11 @@ const app = {
 
             this.initCalculator();
             this.initFileInputListener();
-
-            // M3 FIX: Auto-save shift state every 30 seconds
-            setInterval(() => this.saveLocalState(), 30000);
         } catch (e) {
             console.error(e);
-            this.showToast('Error conectando a DB', 'error');
+            alert("Error conectando a DB: " + e.message);
             loader.classList.add('hidden');
         }
-    },
-
-    // --- TOAST NOTIFICATION SYSTEM (M1 FIX) ---
-    showToast: function (message, type = 'info') {
-        // Remove existing toast
-        const existing = document.getElementById('app-toast');
-        if (existing) existing.remove();
-
-        const toast = document.createElement('div');
-        toast.id = 'app-toast';
-        toast.style.cssText = `
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            padding: 12px 24px; border-radius: 8px; z-index: 20000 !important;
-            font-weight: bold; animation: fadeIn 0.3s;
-            background: ${type === 'error' ? '#d32f2f' : type === 'success' ? '#2e7d32' : '#333'};
-            color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
-        `;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
-        setTimeout(() => toast.remove(), 3000);
     },
 
     // --- SYSTEM EVENTS ---
@@ -231,20 +149,14 @@ const app = {
     },
 
     syncStock: function () {
-        // Fix: Real-time stock sync (Vuln 5) + M2 FIX: Multi-device notifications
+        // Fix: Real-time stock sync (Vuln 5)
         firebase.database().ref('stock').on('value', snap => {
             const s = snap.val();
             if (s) {
-                const prevStock = APP_STATE.stock;
                 APP_STATE.stock = s.masas || 0;
                 APP_STATE.stockDrinks = s.drinks || 0;
                 this.updateStockUI();
                 this.saveLocalState();
-
-                // M2 FIX: Notify if stock changed externally
-                if (APP_STATE.role && prevStock !== 0 && prevStock !== APP_STATE.stock) {
-                    this.showToast(`📦 Stock actualizado: ${APP_STATE.stock} masas`, 'info');
-                }
             }
         });
     },
@@ -373,7 +285,7 @@ const app = {
             billsBody.innerHTML = bills.map(v => `
                 <tr>
                     <td>${v.toLocaleString()}</td>
-                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" aria-label="Cantidad de ${v}" oninput="app.updateDashTotal()"></td>
+                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" oninput="app.updateDashTotal()"></td>
                     <td id="total-${v}">0</td>
                 </tr>
             `).join('');
@@ -383,7 +295,7 @@ const app = {
             coinsBody.innerHTML = coins.map(v => `
                 <tr>
                     <td>${v.toLocaleString()}</td>
-                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" aria-label="Cantidad de ${v}" oninput="app.updateDashTotal()"></td>
+                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" oninput="app.updateDashTotal()"></td>
                     <td id="total-${v}">0</td>
                 </tr>
             `).join('');
@@ -459,21 +371,27 @@ const app = {
         const role = document.getElementById('role-select').value;
         const pin = document.getElementById('login-pin').value;
 
-        if (!role) return this.showToast('Selecciona un rol', 'error');
-        if (!pin) return this.showToast('Ingresa el PIN', 'error');
+        if (!role) return alert("Selecciona un rol");
+        if (!pin) return alert("Ingresa el PIN");
 
-        // Security: Hashed credentials (no plaintext)
+        // Fix: Hashed Credentials (Vuln 1)
+        // 1234 -> 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4
+        // 0000 -> 9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0
+        // admin123 -> 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
+        // 1111 -> 0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172
+
         const HASHES = {
             'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
-            'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0',
-            'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
-            'service': '0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172'
+            'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0', // 0000
+            'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', // admin123
+            'service': '0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172' // 1111
         };
 
         const pinHash = await this.hashPin(pin);
 
         if (pinHash !== HASHES[role]) {
-            return this.showToast('PIN Incorrecto', 'error');
+            console.log("Hash mismatch:", pinHash); // Debug only
+            return alert("PIN Incorrecto");
         }
 
         APP_STATE.role = role;
@@ -487,14 +405,6 @@ const app = {
         if (role === 'cashier') {
             document.getElementById('view-cashier').classList.remove('hidden');
             document.getElementById('nav-cashier').classList.remove('hidden');
-
-            // Rescue State Logic: Check if there are active sales for today
-            const stats = await this.getTodayBreakdown();
-            if (!APP_STATE.stockActive && stats.total > 0) {
-                APP_STATE.stockActive = true;
-                APP_STATE.expectedCash = stats.total; // Approximate recovery
-                this.showToast("⚠️ Sesión restaurada: Se detectaron ventas activas", "warning");
-            }
 
             // Only request open shift if stock not active (restored state check)
             if (!APP_STATE.stockActive) {
@@ -516,89 +426,47 @@ const app = {
     },
 
     setStock: function () {
-        const s = document.getElementById('init-stock').value;
-        const d = document.getElementById('init-stock-drinks').value;
+        const s = parseInt(document.getElementById('init-stock').value);
+        const d = parseInt(document.getElementById('init-stock-drinks').value) || 0;
+        const calcTotal = APP_STATE._currentCalcTotal || 0;
 
-        if (!s || !d) return alert("Ingresa stock inicial");
+        if (isNaN(s)) return alert("Debes ingresar el stock de masas para abrir el turno");
+        if (calcTotal === 0) if (!confirm("¿Deseas abrir la caja con Gs. 0?")) return;
 
+
+        APP_STATE.stock = s;
+        APP_STATE.stockDrinks = d;
+        APP_STATE.pettyCash = calcTotal;
+        APP_STATE.expectedCash = calcTotal;
         APP_STATE.stockActive = true;
-        APP_STATE.productsLines = parseInt(s);
-        APP_STATE.productsDrinks = parseInt(d);
 
-        // Fix: Sync Initial Stock to DB
+        // Reset shift stats
+        APP_STATE.shiftSales = {
+            total: 0,
+            efectivo: 0,
+            transfer: 0,
+            deliveryFees: 0,
+            deliveryEfectivo: 0,
+            deliveryTransfer: 0,
+            items: {}
+        };
+
+        // Fix: Sync Initial Stock to DB (Vuln 5)
         firebase.database().ref('stock').set({
-            masas: APP_STATE.productsLines,
-            drinks: APP_STATE.productsDrinks
+            masas: s,
+            drinks: d
         });
 
         // Reset shop status to open
         firebase.database().ref('config/shopStatus').set({ status: 'open', timestamp: Date.now() });
 
         this.updateStockUI();
-        this.saveLocalState();
+        this.saveLocalState(); // Fix: Persist state
         document.getElementById('modal-stock').classList.add('hidden');
         alert(`Turno Abierto. Stock sincronizado: ${s} masas, ${d} bebidas.`);
     },
 
-    // --- SHIFT MANAGEMENT (OPEN/CLOSE) ---
-    handleShiftAction: function () {
-        console.log("handleShiftAction triggered");
-        try {
-            if (!APP_STATE.stockActive) {
-                // If system thinks shift is closed, try to open
-                console.log("State: Shift Closed -> Request Open");
-                this.requestOpenShift();
-            } else {
-                // Shift is Open -> CLOSE IT
-                console.log("State: Shift Open -> Request Close");
-                this.requestCloseShift();
-            }
-        } catch (error) {
-            console.error("Critical Error in handleShiftAction:", error);
-            alert("Error del sistema en botón Turno: " + error.message);
-        }
-    },
-
     requestOpenShift: function () {
-        const m = document.getElementById('modal-stock');
-        if (!m) return alert("Error: No se encuentra la ventana de apertura.");
-
-        m.classList.remove('hidden');
-        document.getElementById('opening-fields').classList.remove('hidden');
-        document.getElementById('diff-container').classList.add('hidden');
-
-        const btnBack = document.getElementById('btn-cancel-opening');
-        if (btnBack) btnBack.classList.add('hidden');
-    },
-
-    requestCloseShift: function () {
-        // Open White Square Modal
-        document.getElementById('modal-white-confirmation').classList.remove('hidden');
-    },
-
-    confirmCloseShift: async function () {
-        // Execute the logic
-        try {
-            document.getElementById('modal-white-confirmation').classList.add('hidden'); // Hide modal
-            this.showToast("⏳ Procesando cierre...", "info");
-
-            await firebase.database().ref('config/shopStatus').set({
-                status: 'closed',
-                timestamp: Date.now(),
-                lastClosedBy: APP_STATE.role
-            });
-
-            localStorage.removeItem('ore_pos_state');
-            location.reload();
-        } catch (e) {
-            console.error("Error closing shift:", e);
-            alert("Error de conexión al cerrar: " + e.message);
-            localStorage.removeItem('ore_pos_state');
-            location.reload();
-        }
-    },
-
-    updateCloseShiftBreakdown: async function () {
         document.getElementById('modal-stock').classList.remove('hidden');
         document.getElementById('opening-fields').classList.remove('hidden');
         document.getElementById('diff-container').classList.add('hidden');
@@ -610,69 +478,46 @@ const app = {
     },
 
     requestCloseShift: async function () {
-        // Direct close conformation - NO MODAL
-        if (confirm("¿Estás seguro de que deseas cerrar el turno y la caja?")) {
-            try {
-                // 1. Update Shop Status
-                await firebase.database().ref('config/shopStatus').set({
-                    status: 'closed',
-                    timestamp: Date.now(),
-                    lastClosedBy: APP_STATE.role
-                });
+        document.getElementById('modal-stock').classList.remove('hidden');
+        document.getElementById('opening-fields').classList.add('hidden');
+        document.getElementById('diff-container').classList.remove('hidden');
+        document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
 
-                // 2. Clear Session and Reload
-                localStorage.removeItem('ore_pos_state');
+        // Show "Volver a Ventas" during closing
+        const btnBack = document.getElementById('btn-cancel-opening');
+        if (btnBack) btnBack.classList.remove('hidden');
 
-                // 3. Show Feedback
-                this.showToast("✅ Turno cerrado correctamente", "success");
-                setTimeout(() => location.reload(), 1500);
-            } catch (e) {
-                console.error("Error closing shift:", e);
-                alert("Error al cerrar turno: " + e.message);
-            }
-        }
+        // Reset calculator
+        document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
+        this.updateDashTotal();
+
+        // Load movements
+        this.renderMovementsDashboard();
+
+        // Calculate and Show Breakdown
+        this.updateCloseShiftBreakdown();
     },
 
     updateCloseShiftBreakdown: async function () {
-        try {
-            const stats = await this.getTodayBreakdown();
+        const stats = await this.getTodayBreakdown();
+        document.getElementById('detail-petty-cash').textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
 
-            // Defensive null checks to prevent silent failures
-            const setPetty = document.getElementById('detail-petty-cash');
-            if (setPetty) setPetty.textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
+        // Use DB Stats for reliability
+        document.getElementById('detail-total-sales').textContent = `Gs. ${stats.total.toLocaleString()}`;
+        document.getElementById('detail-pizzas').textContent = `Gs. ${stats.pizza.toLocaleString()}`;
+        document.getElementById('detail-drinks').textContent = `Gs. ${stats.drink.toLocaleString()}`;
+        document.getElementById('detail-delivery').textContent = `Gs. ${stats.delivery.toLocaleString()}`;
 
-            // Use DB Stats for reliability
-            const setTotal = document.getElementById('detail-total-sales');
-            if (setTotal) setTotal.textContent = `Gs. ${stats.total.toLocaleString()}`;
+        // New: Movements UI
+        document.getElementById('detail-income').textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
+        document.getElementById('detail-expense').textContent = `Gs. ${stats.movementsOut.toLocaleString()}`;
 
-            const setPizzas = document.getElementById('detail-pizzas');
-            if (setPizzas) setPizzas.textContent = `Gs. ${stats.pizza.toLocaleString()}`;
-
-            const setDrinks = document.getElementById('detail-drinks');
-            if (setDrinks) setDrinks.textContent = `Gs. ${stats.drink.toLocaleString()}`;
-
-            const setDelivery = document.getElementById('detail-delivery');
-            if (setDelivery) setDelivery.textContent = `Gs. ${stats.delivery.toLocaleString()}`;
-
-            // Movements UI
-            const setIncome = document.getElementById('detail-income');
-            if (setIncome) setIncome.textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
-
-            const setExpense = document.getElementById('detail-expense');
-            if (setExpense) setExpense.textContent = `Gs. ${stats.movementsOut.toLocaleString()}`;
-
-            // Correct Formula: 
-            // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
-            // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
-            const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
-
-            const setExpected = document.getElementById('expected-cash-display');
-            if (setExpected) setExpected.textContent = `Gs. ${newExpected.toLocaleString()}`;
-            APP_STATE.expectedCash = newExpected;
-        } catch (error) {
-            console.error('Error en updateCloseShiftBreakdown:', error);
-            this.showToast('Error cargando datos de cierre', 'error');
-        }
+        // Correct Formula: 
+        // Expected Cash = Petty Cash + Cash Sales + Cash Delivery + Extra In - Expenses
+        // Note: 'stats.efectivo' already includes Cash Sales + Cash Delivery Fees.
+        const newExpected = APP_STATE.pettyCash + stats.efectivo + stats.movementsIn - stats.movementsOut;
+        document.getElementById('expected-cash-display').textContent = `Gs. ${newExpected.toLocaleString()}`;
+        APP_STATE.expectedCash = newExpected;
     },
 
     // --- UTILS ---
@@ -686,32 +531,23 @@ const app = {
 
     getTodayBreakdown: async function () {
         const today = new Date().toLocaleDateString();
+        console.log("Fetching stats for:", today);
 
-        // Use local cache if available, otherwise fetch all orders (no index needed)
-        let orders = [];
-
-        if (APP_STATE.ordersCache && APP_STATE.ordersCache.length > 0) {
-            // Use cached orders (already filtered by limitToLast(50) in listener)
-            orders = APP_STATE.ordersCache;
-        } else {
-            // Fallback: Fetch recent orders without orderByChild (no index needed)
-            try {
-                const snap = await firebase.database().ref('orders').limitToLast(100).once('value');
-                snap.forEach(c => {
-                    orders.push({ key: c.key, ...c.val() });
-                });
-            } catch (e) {
-                console.error("DB Error fetching orders:", e);
-                return { pizza: 0, drink: 0, delivery: 0, total: 0, efectivo: 0, transfer: 0, movementsIn: 0, movementsOut: 0 };
-            }
+        // 1. Fetch Orders
+        let snap;
+        try {
+            snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
+        } catch (e) {
+            console.error("DB Error fetching orders:", e);
+            return { pizza: 0, drink: 0, delivery: 0, total: 0, efectivo: 0, transfer: 0, movementsIn: 0, movementsOut: 0 };
         }
 
         let pizza = 0, drink = 0, delivery = 0, total = 0;
         let efectivo = 0, transfer = 0;
 
-        // Filter by today's date in memory (faster, no index needed)
-        orders.forEach(o => {
-            if (o.date === today && o.payStatus === 'paid' && o.status !== 'cancelled') {
+        snap.forEach(c => {
+            const o = c.val();
+            if (o.payStatus === 'paid' && o.status !== 'cancelled') {
                 const orderTotal = (o.total || 0);
                 const orderDelivery = (o.deliveryFee || 0);
                 const fullAmount = orderTotal + orderDelivery;
@@ -731,7 +567,7 @@ const app = {
             }
         });
 
-        // 2. Fetch Movements (Expenses/Income) - no index needed
+        // 2. Fetch Movements (Expenses/Income)
         let movementsIn = 0;
         let movementsOut = 0;
 
@@ -834,12 +670,11 @@ const app = {
     },
 
     deleteMovement: function (key, type, amount) {
-        // M1 FIX: Better confirmation with amount display
-        if (!confirm(`¿Eliminar ${type} de Gs. ${amount.toLocaleString()}?`)) return;
+        if (!confirm("¿Eliminar este movimiento?")) return;
 
         firebase.database().ref('movements').child(key).remove((error) => {
             if (error) {
-                this.showToast('Error al eliminar: ' + error.message, 'error');
+                alert("Error al eliminar: " + error.message);
             } else {
                 // Reverse the effect on expected cash
                 if (type === 'ingreso') {
@@ -860,28 +695,22 @@ const app = {
         document.getElementById('modal-stock').classList.add('hidden');
     },
 
-    closeShift: async function () {
-        try {
-            console.log("🔒 Iniciando cierre de caja...");
-            const counted = APP_STATE._currentCalcTotal || 0;
-            const expected = APP_STATE.expectedCash;
+    closeShift: function () {
+        const counted = APP_STATE._currentCalcTotal || 0;
+        const expected = APP_STATE.expectedCash;
 
-            // Validation: Ensure total contado is not "Gs. 0" if expected is > 0 OR at least some input was touched
-            const anyInput = Array.from(document.querySelectorAll('.cash-calc')).some(i => i.value !== '');
-            if (!anyInput && expected > 0) {
-                this.showToast("Debes realizar el conteo de billetes para cerrar la caja.", "error"); // Replaced alert
-                return;
-            }
+        // Validation: Ensure total contado is not "Gs. 0" if expected is > 0 OR at least some input was touched
+        const anyInput = Array.from(document.querySelectorAll('.cash-calc')).some(i => i.value !== '');
+        if (!anyInput && expected > 0) {
+            return alert("Debes realizar el conteo de billetes para cerrar la caja.");
+        }
 
-            this.showToast("🔒 Procesando cierre...", "info");
-            const todayStr = new Date().toLocaleDateString();
-
-            // 1. Fetch Movements
-            const movSnap = await firebase.database().ref('movements').once('value');
+        const todayStr = new Date().toLocaleDateString();
+        firebase.database().ref('movements').once('value', async snap => {
             const movs = [];
             let totalIn = 0;
             let totalOut = 0;
-            movSnap.forEach(c => {
+            snap.forEach(c => {
                 const m = c.val();
                 if (m.date === todayStr) {
                     movs.push(m);
@@ -890,87 +719,100 @@ const app = {
                 }
             });
 
-            // 2. Fetch Stats
+            // Fetch accurate stats from DB
             const stats = await this.getTodayBreakdown();
 
-            // 3. Generate Report Text
-            let report = `=== CIERRE DE CAJA ===\n` +
-                `Fecha: ${new Date().toLocaleString()}\n` +
-                `Responsable: ${APP_STATE.role}\n\n` +
-                `RESUMEN DINERO:\n` +
-                `- Caja Chica Inicio: Gs. ${APP_STATE.pettyCash.toLocaleString()}\n` +
-                `- Ventas Efectivo:   Gs. ${APP_STATE.shiftSales.efectivo.toLocaleString()}\n` +
-                `- Ingresos Extra:    Gs. ${totalIn.toLocaleString()}\n` +
-                `- Gastos/Retiros:    Gs. ${totalOut.toLocaleString()}\n` +
+            // Recalculate Expected Cash based on DB Logic
+            // Petty Cash + Cash Sales (Includes Delivery Cash if method is Cash) + In - Out
+            // Note: Our DB loop sums 'total + delivery' into 'efectivo' if method is Cash.
+            // So stats.efectivo is the correct Gross Cash Inflow from Orders.
+            const calculatedExpected = APP_STATE.pettyCash + stats.efectivo + totalIn - totalOut;
+
+            const report = `INFORME DE CIERRE DE CAJA\n` +
+                `=================================\n` +
+                `Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}\n` +
                 `---------------------------------\n` +
-                `EFECTIVO ESPERADO:   Gs. ${APP_STATE.expectedCash.toLocaleString()}\n` +
+                `Apertura (Dotación): Gs. ${APP_STATE.pettyCash.toLocaleString()}\n` +
+                `Ventas Efectivo:     Gs. ${stats.efectivo.toLocaleString()}\n` +
+                `Ventas Transfer:     Gs. ${stats.transfer.toLocaleString()}\n` +
+                `---------------------------------\n` +
+                `Suma Ventas + Dot:   Gs. ${(stats.efectivo + APP_STATE.pettyCash).toLocaleString()}\n` +
+                `Ingresos Extra:      Gs. ${totalIn.toLocaleString()}\n` +
+                `Egresos/Gastos:      Gs. ${totalOut.toLocaleString()}\n` +
+                `---------------------------------\n` +
+                `EFECTIVO ESPERADO:   Gs. ${calculatedExpected.toLocaleString()}\n` +
                 `EFECTIVO CONTADO:    Gs. ${counted.toLocaleString()}\n` +
-                `DIFERENCIA:          Gs. ${(counted - APP_STATE.expectedCash).toLocaleString()}\n\n` +
+                `DIFERENCIA:          Gs. ${(counted - calculatedExpected).toLocaleString()}\n` +
                 `=================================\n\n` +
                 `DETALLE DELIVERY:\n` +
-                `- Costo Delivery:    Gs. ${stats.delivery.toLocaleString()}\n\n` +
+                `- Total Delivery:    Gs. ${stats.delivery.toLocaleString()}\n\n` +
                 `MOVIMIENTOS DE CAJA:\n` +
                 (movs.length > 0 ?
                     movs.map(m => `[${m.type.toUpperCase()}] ${m.desc}: Gs. ${m.amount.toLocaleString()}`).join('\n') : "Sin movimientos registrados") +
                 `\n\nDETALLE DE PRODUCTOS VENDIDOS:\n` +
                 Object.entries(APP_STATE.shiftSales.items).map(([name, count]) => `- ${name}: ${count}`).join('\n');
 
+            // Append Detailed Breakdown
+            // report += ... (Already part of the flow above? No, user wanted simplified detail on download too)
+            // But we already included detailed vars in the main block.
+            // We can add the specific Pizza vs Drink split.
             const splitReport = `\n\nDESGLOSE DE VENTAS:\n` +
                 `- Ventas Pizzas:     Gs. ${stats.pizza.toLocaleString()}\n` +
                 `- Ventas Bebidas:    Gs. ${stats.drink.toLocaleString()}\n` +
-                `- Costo Delivery:    Gs. ${stats.delivery.toLocaleString()}`;
+                `- Delivery Fees:     Gs. ${stats.delivery.toLocaleString()}`;
 
             const finalReport = report + splitReport;
 
-
-
-            // 4. Download Report
+            // Download report
             const blob = new Blob([finalReport], { type: 'text/plain' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             const safeDate = new Date().toISOString().split('T')[0];
             link.download = `Cierre_Caja_${safeDate}.txt`;
-            document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
 
-            // 5. Archive Orders
-            this.showToast("📦 Archivando pedidos...", "info");
-            const ordersSnap = await firebase.database().ref('orders').once('value');
-            const archivePromises = [];
+            // ✨ NUEVO: Archivar pedidos completados al cerrar caja
+            console.log("📦 Archivando pedidos completados...");
+            firebase.database().ref('orders').once('value', ordersSnap => {
+                const archivePromises = [];
 
-            ordersSnap.forEach(child => {
-                const order = child.val();
-                if (order.status === 'completed' && order.payStatus === 'paid') {
-                    const archiveRef = firebase.database().ref(`orders_archive/${safeDate}/${child.key}`);
-                    archivePromises.push(
-                        archiveRef.set(order).then(() => child.ref.remove())
-                    );
-                }
+                ordersSnap.forEach(child => {
+                    const order = child.val();
+                    // Archivar solo pedidos completados y pagados
+                    if (order.status === 'completed' && order.payStatus === 'paid') {
+                        // Guardar en archivo histórico
+                        const archiveRef = firebase.database().ref(`orders_archive/${safeDate}/${child.key}`);
+                        archivePromises.push(
+                            archiveRef.set(order).then(() => {
+                                // Eliminar de pedidos activos
+                                return child.ref.remove();
+                            })
+                        );
+                    }
+                });
+
+                Promise.all(archivePromises).then(() => {
+                    console.log("✅ Pedidos archivados exitosamente");
+
+                    // 1. Limpiar almacenamiento local para obligar a nueva apertura
+                    localStorage.removeItem('ore_pos_state');
+
+                    // 2. Notificar a TODOS (Cajero + Chef) que el turno cerró
+                    firebase.database().ref('config/shopStatus').set({
+                        status: 'closed',
+                        timestamp: Date.now()
+                    });
+
+                    // El listener 'listenShopStatus' mostrará el mensaje y recargará
+
+                }).catch(error => {
+                    console.error("Error archivando pedidos:", error);
+                    alert("Error al cerrar: " + error.message);
+                    localStorage.removeItem('ore_pos_state');
+                    location.reload();
+                });
             });
-
-            await Promise.all(archivePromises);
-
-            console.log("✅ Cierre completado exitosamente");
-
-            // 6. Reset & Close
-            localStorage.removeItem('ore_pos_state');
-            await firebase.database().ref('config/shopStatus').set({
-                status: 'closed',
-                timestamp: Date.now()
-            });
-
-            this.showToast("✅ Turno cerrado correctamente", "success");
-            setTimeout(() => location.reload(), 2000);
-
-        } catch (error) {
-            console.error("Error CRÍTICO en closeShift:", error);
-            if (error.code === 'PERMISSION_DENIED') {
-                this.showToast("⛔ ERROR DE PERMISOS: No se pudo archivar. Revisa las reglas de Firebase.", "error");
-            } else {
-                this.showToast("Error al cerrar: " + error.message, "error");
-            }
-        }
+        });
     },
 
     // --- SERVICE ROLE LOGIC ---
@@ -1119,13 +961,6 @@ const app = {
     },
 
     toggleDeliveryFee: function () {
-        // M4 FIX: Validate cart has items before showing delivery options
-        if (APP_STATE.cart.length === 0) {
-            this.showToast('Agrega productos primero', 'error');
-            document.getElementById('order-type').value = 'Para Comer Acá';
-            return;
-        }
-
         const type = document.getElementById('order-type').value;
         const container = document.getElementById('delivery-fee-container');
         if (type === 'Delivery') {
@@ -1255,7 +1090,7 @@ const app = {
                 const breakdownHTML = `
                     <div class="breakdown-row"><span>Ventas Efectivo</span><span style="color:#4caf50">${this.formatGs(paymentMethods['Efectivo'])}</span></div>
                     <div class="breakdown-row"><span>Ventas Transferencia</span><span style="color:#2196f3">${this.formatGs(paymentMethods['Transferencia'])}</span></div>
-                    <div class="breakdown-row"><span>Costo Delivery</span><span>${this.formatGs(deliveryFees)}</span></div>
+                    <div class="breakdown-row"><span>Delivery Fees</span><span>${this.formatGs(deliveryFees)}</span></div>
                     <div class="breakdown-row" style="color:var(--success)"><span>+ Ingresos Extra</span><span>${this.formatGs(extraIncome)}</span></div>
                     <div class="breakdown-row" style="color:var(--danger)"><span>- Gastos / Retiros</span><span>${this.formatGs(expenses)}</span></div>
                     <div class="breakdown-row total"><span>Beneficio Neto</span><span style="color:var(--primary-gold)">${this.formatGs(netSales)}</span></div>
@@ -2016,16 +1851,6 @@ const app = {
         const drinksCount = order.items.filter(i => i.type === 'drink').length;
         APP_STATE.stockDrinks += drinksCount;
 
-        // PERSIST RESTORED STOCK TO DB
-        const stockRef = firebase.database().ref('stock');
-        stockRef.transaction(current => {
-            if (!current) return;
-            return {
-                masas: (current.masas || 0) + pizzasCount,
-                drinks: (current.drinks || 0) + drinksCount
-            };
-        });
-
         this.updateStockUI();
 
         // Reverse shift stats if order was paid
@@ -2217,10 +2042,7 @@ const app = {
     }
 };
 
-
-
 // Auto init
-
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
