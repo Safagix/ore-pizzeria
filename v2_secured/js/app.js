@@ -576,20 +576,28 @@ const app = {
             document.getElementById('view-cashier').classList.remove('hidden');
             document.getElementById('nav-cashier').classList.remove('hidden');
 
-            // Rescue State Logic: Check if there are active sales for today
-            const stats = await this.getTodayBreakdown();
-            if (!APP_STATE.stockActive && stats.total > 0) {
-                APP_STATE.stockActive = true;
-                APP_STATE.expectedCash = stats.total; // Approximate recovery
-                this.showToast("⚠️ Sesión restaurada: Se detectaron ventas activas", "warning");
-            }
+            // FIX: Limpiar estado del día para reiniciar turno
+            // Esto permite cargar la caja chica de nuevo
+            localStorage.removeItem('ore_pos_state');
 
-            // Only request open shift if stock not active (restored state check)
-            if (!APP_STATE.stockActive) {
-                this.requestOpenShift();
-            } else {
-                document.getElementById('diff-container').classList.remove('hidden'); // Show standard dash
-            }
+            // Resetear variables de estado del turno
+            APP_STATE.stock = 0;
+            APP_STATE.stockDrinks = 0;
+            APP_STATE.pettyCash = 0;
+            APP_STATE.expectedCash = 0;
+            APP_STATE.stockActive = false;
+            APP_STATE.shiftSales = {
+                total: 0,
+                efectivo: 0,
+                transfer: 0,
+                deliveryFees: 0,
+                deliveryEfectivo: 0,
+                deliveryTransfer: 0,
+                items: {}
+            };
+
+            // SIEMPRE mostrar modal de arqueo de caja al iniciar sesión
+            this.requestOpenShift();
             this.listenOrdersGeneric();
         } else if (role === 'chef') {
             document.getElementById('view-chef').classList.remove('hidden');
@@ -719,9 +727,6 @@ const app = {
             const setExpected = document.getElementById('expected-cash-display');
             if (setExpected) setExpected.textContent = `Gs. ${newExpected.toLocaleString()}`;
             APP_STATE.expectedCash = newExpected;
-
-            // Sync difference display
-            this.updateDashTotal();
         } catch (error) {
             console.error('Error en updateCloseShiftBreakdown:', error);
             this.showToast('Error cargando datos de cierre', 'error');
@@ -994,8 +999,7 @@ const app = {
 
             ordersSnap.forEach(child => {
                 const order = child.val();
-                const status = order.status || 'cooking';
-                if ((status === 'completed' || status === 'ready') && order.payStatus === 'paid') {
+                if (order.status === 'completed' && order.payStatus === 'paid') {
                     const archiveRef = firebase.database().ref(`orders_archive/${safeDate}/${child.key}`);
                     archivePromises.push(
                         archiveRef.set(order).then(() => child.ref.remove())
