@@ -74,10 +74,10 @@ const app = {
         toast.id = 'app-toast';
         toast.style.cssText = `
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            padding: 12px 24px; border-radius: 8px; z-index: 9999;
+            padding: 12px 24px; border-radius: 8px; z-index: 20000 !important;
             font-weight: bold; animation: fadeIn 0.3s;
             background: ${type === 'error' ? '#d32f2f' : type === 'success' ? '#2e7d32' : '#333'};
-            color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
         `;
         toast.textContent = message;
         document.body.appendChild(toast);
