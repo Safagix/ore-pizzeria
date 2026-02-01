@@ -30,6 +30,152 @@ const APP_STATE = {
 };
 
 const app = {
+    // --- NEW CLOSE SHIFT LOGIC (CLEAN IMPLEMENTATION) ---
+    launchNewClose: async function () {
+        // 1. Show Modal
+        document.getElementById('modal-new-close').classList.remove('hidden');
+
+        // 2. Init Calculator (Fresh)
+        const bills = [100000, 50000, 20000];
+        const coins = [10000, 5000, 2000, 1000, 500, 100, 50];
+
+        const renderInput = (v) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <span style="color:#888; width: 60px;">${v.toLocaleString()}</span>
+                <input type="number" class="new-cash-input" data-val="${v}" placeholder="0" 
+                       style="width: 80px; background:#111; border:1px solid #444; color:white; padding:5px; text-align:right;"
+                       oninput="app.recalcNewTotal()">
+            </div>`;
+
+        document.getElementById('new-bills-container').innerHTML = bills.map(renderInput).join('');
+        document.getElementById('new-coins-container').innerHTML = coins.map(renderInput).join('');
+
+        // 3. Update Stats
+        this.updateNewCloseStats();
+    },
+
+    recalcNewTotal: function () {
+        let total = 0;
+        document.querySelectorAll('.new-cash-input').forEach(inp => {
+            const val = parseInt(inp.dataset.val);
+            const count = parseInt(inp.value) || 0;
+            total += (val * count);
+        });
+        APP_STATE._newCalcTotal = total;
+        document.getElementById('new-total-counted').textContent = 'Gs. ' + total.toLocaleString();
+        this.updateNewCloseDiff();
+    },
+
+    addNewMovement: function () {
+        const desc = document.getElementById('new-mov-desc').value;
+        const amount = parseInt(document.getElementById('new-mov-amount').value);
+        const type = document.getElementById('new-mov-type').value;
+
+        if (!desc || !amount) return alert("Completa los campos");
+
+        // Save to DB immediately
+        const movement = {
+            type: type,
+            amount: amount,
+            desc: desc,
+            timestamp: new Date().toLocaleTimeString(),
+            date: new Date().toLocaleDateString(),
+            user: APP_STATE.role
+        };
+        APP_STATE.dbRef.root.child('movements').push(movement);
+
+        // Clear
+        document.getElementById('new-mov-desc').value = '';
+        document.getElementById('new-mov-amount').value = '';
+
+        // Refresh Stats
+        setTimeout(() => this.updateNewCloseStats(), 500);
+    },
+
+    updateNewCloseStats: async function () {
+        const stats = await this.getTodayBreakdown();
+        const petty = APP_STATE.pettyCash || 0;
+
+        // Formula: Expected = Petty + Sales + ExtraIn - Expenses
+        // Note: stats.total includes everything, simplified here:
+        // We will trust getTodayBreakdown structure.
+
+        // Re-fetch movements to be sure
+        // We use the same getTodayBreakdown logic which is robust.
+
+        const expected = petty + stats.efectivo + stats.movementsIn - stats.movementsOut;
+        APP_STATE._newExpected = expected;
+        APP_STATE._newStats = stats;
+
+        document.getElementById('summ-petty').textContent = petty.toLocaleString();
+        document.getElementById('summ-sales').textContent = stats.efectivo.toLocaleString();
+        document.getElementById('summ-in').textContent = stats.movementsIn.toLocaleString();
+        document.getElementById('summ-out').textContent = stats.movementsOut.toLocaleString();
+        document.getElementById('summ-expected').textContent = 'Gs. ' + expected.toLocaleString();
+
+        // Render Movements List Preview
+        const movList = document.getElementById('new-mov-list');
+        movList.innerHTML = '';
+        // We would need to fetch them again or user stats. No list needed here requested, just summary.
+
+        this.updateNewCloseDiff();
+    },
+
+    updateNewCloseDiff: function () {
+        const counted = APP_STATE._newCalcTotal || 0;
+        const expected = APP_STATE._newExpected || 0;
+        const diff = counted - expected;
+
+        const el = document.getElementById('summ-diff');
+        if (diff === 0) {
+            el.textContent = "PERFECTO (0)";
+            el.style.color = "#4caf50";
+        } else if (diff < 0) {
+            el.textContent = "FALTANTE: Gs. " + diff.toLocaleString();
+            el.style.color = "#f44336";
+        } else {
+            el.textContent = "SOBRANTE: + Gs. " + diff.toLocaleString();
+            el.style.color = "#4caf50";
+        }
+    },
+
+    executeNewClose: function () {
+        const counted = APP_STATE._newCalcTotal || 0;
+        const expected = APP_STATE._newExpected || 0;
+
+        if (counted === 0 && expected > 0) {
+            if (!confirm("No ingresaste efectivo en la calculadora. ¿Seguro que quieres cerrar en 0?")) return;
+        }
+
+        if (!confirm(`CONFIRMAR CIERRE:\nEsperado: ${expected.toLocaleString()}\nContado: ${counted.toLocaleString()}\nDiferencia: ${(counted - expected).toLocaleString()}`)) return;
+
+        // Execute Close
+        // Generate Report
+        const report = `CIERRE DE CAJA\nFecha: ${new Date().toLocaleString()}\n` +
+            `Esperado: ${expected}\nContado: ${counted}\nDiferencia: ${counted - expected}\n` +
+            `----------------\n` +
+            `Ventas Efec: ${APP_STATE._newStats.efectivo}\nGastos: ${APP_STATE._newStats.movementsOut}`;
+
+        const blob = new Blob([report], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const safeDate = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+        link.download = `Cierre_${safeDate}.txt`;
+        document.body.appendChild(link);
+        link.click();
+
+        // Archive Logic
+        if (APP_STATE._newStats.efectivo > 0) { // Only if there were sales
+            this.archiveOrders();
+        }
+
+        // Close
+        firebase.database().ref('config/shopStatus').set({ status: 'closed', timestamp: Date.now() });
+        localStorage.removeItem('ore_pos_state');
+        alert("Cierre Exitoso. Hasta mañana.");
+        location.reload();
+    },
+
     init: function () {
         const loader = document.getElementById('loader');
         try {
