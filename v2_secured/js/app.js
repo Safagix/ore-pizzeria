@@ -315,7 +315,7 @@ const app = {
             billsBody.innerHTML = bills.map(v => `
                 <tr>
                     <td>${v.toLocaleString()}</td>
-                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" oninput="app.updateDashTotal()"></td>
+                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" aria-label="Cantidad de ${v}" oninput="app.updateDashTotal()"></td>
                     <td id="total-${v}">0</td>
                 </tr>
             `).join('');
@@ -325,7 +325,7 @@ const app = {
             coinsBody.innerHTML = coins.map(v => `
                 <tr>
                     <td>${v.toLocaleString()}</td>
-                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" oninput="app.updateDashTotal()"></td>
+                    <td><input type="number" class="cash-calc" data-val="${v}" placeholder="0" aria-label="Cantidad de ${v}" oninput="app.updateDashTotal()"></td>
                     <td id="total-${v}">0</td>
                 </tr>
             `).join('');
