@@ -1274,8 +1274,23 @@ const app = {
         btn.disabled = true;
 
         try {
-            const snap = await firebase.database().ref('/').once('value');
-            const data = snap.val();
+            // Fetch nodes individually to avoid root permission denied error
+            const [orders, stock, clients, movements, products] = await Promise.all([
+                firebase.database().ref('orders').once('value').then(s => s.val()),
+                firebase.database().ref('stock').once('value').then(s => s.val()),
+                firebase.database().ref('clients').once('value').then(s => s.val()),
+                firebase.database().ref('movements').once('value').then(s => s.val()),
+                firebase.database().ref('products').once('value').then(s => s.val())
+            ]);
+
+            // Reconstruct object
+            const data = {
+                orders: orders || {},
+                stock: stock || {},
+                clients: clients || {},
+                movements: movements || {},
+                products: products || {}
+            };
 
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
             const downloadAnchorNode = document.createElement('a');
