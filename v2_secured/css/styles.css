@@ -1239,3 +1239,38 @@ header {
     max-width: 500px !important;
     width: 90% !important;
 }
+/* --- EMERGENCY VISIBILITY FIX FOR CALCULATOR --- */
+.arqueo-calc-panel,
+.arqueo-tables-row,
+.arqueo-table-col,
+#bills-body,
+#coins-body {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+.arqueo-tables-row {
+    display: flex !important;
+    /* Restore flex layout for row */
+}
+
+/* Ensure modal content isn't clipped */
+.modal-content.arqueo-dashboard {
+    overflow: visible !important;
+    max-width: 95vw !important;
+}
+
+/* Ensure no parent is hiding it */
+.arqueo-body {
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+@media (max-width: 768px) {
+    .arqueo-body {
+        flex-direction: column !important;
+    }
+}
