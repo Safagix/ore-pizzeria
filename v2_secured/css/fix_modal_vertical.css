@@ -1,0 +1,51 @@
+/* --- EMERGENCY LAYOUT FIX: VERTICAL STACK --- */
+
+/* Force vertical column layout for the modal body */
+.arqueo-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow-y: visible !important;
+    /* Let parent handle scroll */
+}
+
+/* Make panels take full width */
+.arqueo-calc-panel,
+.arqueo-mov-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+}
+
+/* Ensure Row display for tables inside the panel is preserved if needed, or stack them too */
+/* Stacking tables is safer for mobile/narrow screens */
+.arqueo-tables-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    /* Allow wrap */
+    gap: 10px !important;
+    justify-content: center !important;
+}
+
+/* Each table column takes full space if needed */
+.arqueo-table-col {
+    flex: 1 1 300px !important;
+    /* Grow, Shrink, Base 300px */
+    width: auto !important;
+    min-width: 280px !important;
+}
+
+/* Modal Content Scroll Fix */
+.modal-content.arqueo-dashboard {
+    height: 90vh !important;
+    /* Fixed height to force scrollbar */
+    overflow-y: auto !important;
+    display: block !important;
+    /* Block layout for content wrapper */
+    padding-bottom: 50px !important;
+}
