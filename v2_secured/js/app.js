@@ -571,25 +571,30 @@ const app = {
         if (btnBack) btnBack.classList.add('hidden');
     },
 
-    requestCloseShift: async function () {
-        if (confirm("⚠️ ¿CONFIRMAR CIERRE DE CAJA?\nSe cerrará la sesión actual.")) {
-            try {
-                this.showToast("⏳ Procesando cierre...", "info");
+    requestCloseShift: function () {
+        // Open White Square Modal
+        document.getElementById('modal-white-confirmation').classList.remove('hidden');
+    },
 
-                await firebase.database().ref('config/shopStatus').set({
-                    status: 'closed',
-                    timestamp: Date.now(),
-                    lastClosedBy: APP_STATE.role
-                });
+    confirmCloseShift: async function () {
+        // Execute the logic
+        try {
+            document.getElementById('modal-white-confirmation').classList.add('hidden'); // Hide modal
+            this.showToast("⏳ Procesando cierre...", "info");
 
-                localStorage.removeItem('ore_pos_state');
-                location.reload();
-            } catch (e) {
-                console.error("Error closing shift:", e);
-                alert("Error de conexión al cerrar: " + e.message);
-                localStorage.removeItem('ore_pos_state');
-                location.reload();
-            }
+            await firebase.database().ref('config/shopStatus').set({
+                status: 'closed',
+                timestamp: Date.now(),
+                lastClosedBy: APP_STATE.role
+            });
+
+            localStorage.removeItem('ore_pos_state');
+            location.reload();
+        } catch (e) {
+            console.error("Error closing shift:", e);
+            alert("Error de conexión al cerrar: " + e.message);
+            localStorage.removeItem('ore_pos_state');
+            location.reload();
         }
     },
 

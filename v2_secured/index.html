@@ -764,6 +764,27 @@
             </div>
 
 
+            <!-- SIMPLE WHITE SQUARE MODAL -->
+            <div id="modal-white-confirmation" class="modal hidden"
+                style="z-index: 20000; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+                <div
+                    style="background: white; width: 300px; padding: 30px; border-radius: 4px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                    <h3 style="color: black; margin-top: 0;">¿Cerrar Turno?</h3>
+                    <p style="color: #666; margin-bottom: 25px;">Se cerrará la sesión actual.</p>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="document.getElementById('modal-white-confirmation').classList.add('hidden')"
+                            style="flex: 1; padding: 10px; background: #eee; border: none; color: #333; font-weight: bold; cursor: pointer; border-radius: 4px;">
+                            CANCELAR
+                        </button>
+                        <button onclick="app.confirmCloseShift()"
+                            style="flex: 1; padding: 10px; background: #d32f2f; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 4px;">
+                            CERRAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Firebase SDKs (v8) -->
             <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
             <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
