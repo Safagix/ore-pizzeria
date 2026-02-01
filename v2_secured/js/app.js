@@ -500,6 +500,7 @@ const app = {
     },
 
     requestCloseShift: async function () {
+        console.log("requestCloseShift called"); // DEBUG
         document.getElementById('modal-stock').classList.remove('hidden');
         document.getElementById('opening-fields').classList.add('hidden');
         document.getElementById('diff-container').classList.remove('hidden');
