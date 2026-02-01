@@ -592,35 +592,50 @@
                             style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px; background: rgba(0,0,0,0.3);">
                             <div
                                 style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
-                                BALANCE DE CAJA</div>
+                                DETALLE ESPERADO</div>
 
                             <div
                                 style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
-                                <span>Dotación Inicial:</span><span id="detail-petty-cash">0</span>
+                                <span>Caja Chica (Inicio):</span><span id="detail-petty-cash">0</span>
                             </div>
                             <div
-                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
-                                <span>Ventas Efectivo:</span><span id="detail-total-sales">0</span>
+                                style="display: flex; justify-content: space-between; margin-bottom: 3px; color: #fff; font-weight: bold;">
+                                <span>Total Ventas:</span><span id="detail-total-sales">0</span>
                             </div>
+
+                            <!-- Breakdown -->
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 0.9rem; padding-left: 15px; color: #aaa;">
+                                <span>• Pizzas:</span><span id="detail-pizzas">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 0.9rem; padding-left: 15px; color: #aaa;">
+                                <span>• Bebidas:</span><span id="detail-drinks">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; padding-left: 15px; color: #aaa;">
+                                <span>• Delivery:</span><span id="detail-delivery">0</span>
+                            </div>
+
                             <div
                                 style="display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--success);">
-                                <span>+ Otros Ingresos:</span><span id="detail-income">0</span>
+                                <span>+ Ingresos Extra:</span><span id="detail-income">0</span>
                             </div>
                             <div
                                 style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #f44336;">
-                                <span>- Egresos/Gastos:</span><span id="detail-expense">0</span>
+                                <span>- Gastos/Retiros:</span><span id="detail-expense">0</span>
                             </div>
 
                             <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
 
                             <div
                                 style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
-                                <span>DEBE HABER:</span><span id="expected-cash-display"
+                                <span>TOTAL EN CAJA:</span><span id="expected-cash-display"
                                     style="color: var(--success);">0</span>
                             </div>
                             <div
-                                style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
-                                <span>DIFERENCIA:</span><span id="diff-display">0</span>
+                                style="display: flex; justify-content: space-between; margin-top: 5px; color: #f44336; font-weight: bold;">
+                                <span>FALTANTE (Dinero perdido):</span><span id="diff-display">0</span>
                             </div>
                         </div>
                     </div>

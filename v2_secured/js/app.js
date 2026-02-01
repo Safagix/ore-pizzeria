@@ -528,11 +528,14 @@ const app = {
         const stats = await this.getTodayBreakdown();
         document.getElementById('detail-petty-cash').textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
 
-        // Use DB Stats for reliability
-        document.getElementById('detail-total-sales').textContent = `Gs. ${stats.total.toLocaleString()}`;
-        document.getElementById('detail-pizzas').textContent = `Gs. ${stats.pizza.toLocaleString()}`;
-        document.getElementById('detail-drinks').textContent = `Gs. ${stats.drink.toLocaleString()}`;
-        document.getElementById('detail-delivery').textContent = `Gs. ${stats.delivery.toLocaleString()}`;
+        // Populate Cash-Only Layout (Matches Layout V2 Request)
+        // Note: Total Sales here refers to Total CASH Sales as per the breakdown logic requested
+        document.getElementById('detail-total-sales').textContent = `Gs. ${stats.efectivo.toLocaleString()}`;
+
+        // Detailed Lines (Calculated as Cash-Only in getTodayBreakdown)
+        document.getElementById('detail-pizzas').textContent = `Gs. ${stats.pizzasCash.toLocaleString()}`;
+        document.getElementById('detail-drinks').textContent = `Gs. ${stats.drinksCash.toLocaleString()}`;
+        document.getElementById('detail-delivery').textContent = `Gs. ${stats.deliveryCash.toLocaleString()}`;
 
         // New: Movements UI
         document.getElementById('detail-income').textContent = `Gs. ${stats.movementsIn.toLocaleString()}`;
@@ -565,11 +568,14 @@ const app = {
             snap = await firebase.database().ref('orders').orderByChild('date').equalTo(today).once('value');
         } catch (e) {
             console.error("DB Error fetching orders:", e);
-            return { pizza: 0, drink: 0, delivery: 0, total: 0, efectivo: 0, transfer: 0, movementsIn: 0, movementsOut: 0 };
+            return { pizza: 0, drink: 0, delivery: 0, total: 0, efectivo: 0, transfer: 0, movementsIn: 0, movementsOut: 0, pizzasCash: 0, drinksCash: 0, deliveryCash: 0 };
         }
 
         let pizza = 0, drink = 0, delivery = 0, total = 0;
         let efectivo = 0, transfer = 0;
+
+        // Detailed Cash Breakdown
+        let pizzasCash = 0, drinksCash = 0, deliveryCash = 0;
 
         snap.forEach(c => {
             const o = c.val();
@@ -581,14 +587,26 @@ const app = {
                 total += fullAmount;
                 delivery += orderDelivery;
 
-                if (o.method === 'Efectivo') efectivo += fullAmount;
-                else transfer += fullAmount;
+                if (o.method === 'Efectivo') {
+                    efectivo += fullAmount;
+                    deliveryCash += orderDelivery;
+                } else {
+                    transfer += fullAmount;
+                }
 
                 (o.items || []).forEach(i => {
                     const isPizza = i.type === 'pizza' || i.cat === 'flavors';
                     const isDrink = i.type === 'drink' || i.cat === 'drinks';
-                    if (isPizza) pizza += (i.price || 0);
-                    if (isDrink) drink += (i.price || 0);
+                    const itemPrice = (i.price || 0);
+
+                    if (isPizza) {
+                        pizza += itemPrice;
+                        if (o.method === 'Efectivo') pizzasCash += itemPrice;
+                    }
+                    if (isDrink) {
+                        drink += itemPrice;
+                        if (o.method === 'Efectivo') drinksCash += itemPrice;
+                    }
                 });
             }
         });
@@ -610,8 +628,9 @@ const app = {
             console.error("DB Error fetching movements:", e);
         }
 
-        return { pizza, drink, delivery, total, efectivo, transfer, movementsIn, movementsOut };
+        return { pizza, drink, delivery, total, efectivo, transfer, movementsIn, movementsOut, pizzasCash, drinksCash, deliveryCash };
     },
+
 
     saveMovementDashboard: function () {
         const amount = parseInt(document.getElementById('dash-mov-amount').value);
