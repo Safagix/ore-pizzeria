@@ -126,10 +126,15 @@
 
                 <!-- Sidebar logic -->
                 <div class="cart-sidebar">
-                    <h3 class="brand" style="margin-bottom: 20px; color: white;">Resumen</h3>
-                    <div class="cart-list" id="cart-container"></div>
+                    <div class="cart-list" id="cart-container" style="flex: 1; overflow-y: auto; margin-bottom: 10px;">
+                    </div>
 
-                    <div style="margin-top: auto;">
+                    <div id="cart-actions" style="margin-top: auto; padding-top: 10px; border-top: 1px solid #333;">
+                        <!-- Manual Open Shift Button (Visible when closed) -->
+                        <button id="btn-sidebar-open" class="btn btn-success hidden"
+                            style="width: 100%; margin-bottom: 15px; font-weight: bold; border: 2px solid #fff;"
+                            onclick="app.requestOpenShift()">🔓 ABRIR TURNO (REQUERIDO)</button>
+
                         <!-- Client Management -->
                         <div style="position: relative; margin-bottom: 15px;">
                             <div style="display: flex; gap: 5px;">
@@ -196,7 +201,8 @@
                                 (Pendiente)</button>
                             <button class="btn btn-success" onclick="app.sendOrder('paid')">Cobrado y Enviar
                                 (Pagado)</button>
-                            <button class="btn btn-outline" style="margin-top: 20px; border-color: #555; color: #888;"
+                            <button class="btn btn-outline" id="btn-sidebar-close"
+                                style="width: 100%; margin: 10px 0; border-color: #f44336; color: #f44336;"
                                 onclick="app.requestCloseShift()">CERRAR TURNO / CAJA</button>
                         </div>
                     </div>
@@ -488,288 +494,291 @@
                 </div>
             </div>
 
-            <div id="modal-stock" class="modal hidden">
-                <div class="modal-content arqueo-dashboard">
-                    <div class="arqueo-header">
-                        <h2 class="brand">Cierre de Caja</h2>
+        </div>
+
+        <!-- MODAL ARQUEO / APERTURA (Moved to bottom for better overlay) -->
+        <div id="modal-stock" class="modal hidden" style="z-index: 999999;">
+            <div class="modal-content arqueo-dashboard">
+                <div class="arqueo-header">
+                    <h2 class="brand" id="modal-stock-title">Mantenimiento de Turno</h2>
+                </div>
+
+                <div class="arqueo-body">
+                    <!-- Apertura fields (Visible only during opening) -->
+                    <div id="opening-fields" class="hidden arqueo-opening"
+                        style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border: 1px solid var(--primary-gold); margin-bottom: 20px;">
+                        <h3 class="brand" style="color: var(--primary-gold); margin-bottom: 15px;">Configuración de
+                            Apertura</h3>
+                        <div class="opening-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display: block; color: #aaa; font-size: 0.8rem; margin-bottom: 5px;">Stock
+                                    Masas</label>
+                                <input type="number" id="init-stock" placeholder="0"
+                                    style="width: 100%; padding: 10px; background: #111; border: 1px solid #444; color: white;">
+                            </div>
+                            <div>
+                                <label style="display: block; color: #aaa; font-size: 0.8rem; margin-bottom: 5px;">Stock
+                                    Bebidas</label>
+                                <input type="number" id="init-stock-drinks" placeholder="0"
+                                    style="width: 100%; padding: 10px; background: #111; border: 1px solid #444; color: white;">
+                            </div>
+                        </div>
+                        <button class="btn btn-gold"
+                            style="width: 100%; margin-top: 15px; height: 50px; font-size: 1.1rem;"
+                            onclick="app.setStock()">✅ INICIAR TURNO Y ABRIR CAJA</button>
+                        <hr style="border: 0; border-top: 1px solid #444; margin: 20px 0;">
                     </div>
 
-                    <div class="arqueo-body">
-                        <!-- Panel Izquierdo: Calculadora -->
-                        <div class="arqueo-calc-panel">
-                            <h3>Calculadora de Billetes (Gs)</h3>
+                    <!-- Panel Izquierdo: Calculadora -->
+                    <div class="arqueo-calc-panel">
+                        <h3 id="calc-title">Contadores de Efectivo</h3>
+                        <p style="color: #888; font-size: 0.8rem; margin-bottom: 15px;">Indica la cantidad de
+                            billetes/monedas para el arqueo.</p>
 
-                            <div class="arqueo-tables-row">
-                                <!-- Billetes -->
-                                <div class="arqueo-table-col">
-                                    <p class="table-title">Billetes</p>
-                                    <table class="arqueo-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Denom</th>
-                                                <th>Cant</th>
-                                                <th>Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="bills-body"></tbody>
-                                    </table>
-                                </div>
-                                <!-- Monedas -->
-                                <div class="arqueo-table-col">
-                                    <p class="table-title">Monedas</p>
-                                    <table class="arqueo-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Denom</th>
-                                                <th>Cant</th>
-                                                <th>Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="coins-body"></tbody>
-                                    </table>
-                                </div>
+                        <div class="arqueo-tables-row">
+                            <!-- Billetes -->
+                            <div class="arqueo-table-col">
+                                <p class="table-title">Billetes</p>
+                                <table class="arqueo-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Denom</th>
+                                            <th>Cant</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bills-body"></tbody>
+                                </table>
                             </div>
-
-                            <div class="arqueo-total-bar">
-                                Total Caja: <span id="calc-total-display">0</span> Gs
+                            <!-- Monedas -->
+                            <div class="arqueo-table-col">
+                                <p class="table-title">Monedas</p>
+                                <table class="arqueo-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Denom</th>
+                                            <th>Cant</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="coins-body"></tbody>
+                                </table>
                             </div>
                         </div>
 
-                        <!-- Panel Derecho: Movimientos -->
-                        <div class="arqueo-mov-panel">
-                            <h3>Registro Movimientos</h3>
-
-                            <div class="arqueo-mov-form">
-                                <input type="text" id="dash-mov-desc" placeholder="Descripción">
-                                <input type="number" id="dash-mov-amount" placeholder="Monto">
-                                <select id="dash-mov-type">
-                                    <option value="ingreso">Ingreso</option>
-                                    <option value="egreso">Egreso</option>
-                                </select>
-                                <button class="btn btn-gold" onclick="app.saveMovementDashboard()">Agregar</button>
-                            </div>
-
-                            <div id="dash-mov-list" class="arqueo-mov-list"></div>
-
-                            <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
-
-                            <div id="diff-container" class="arqueo-diff hidden"
-                                style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px;">
-                                <div
-                                    style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
-                                    DETALLE ESPERADO</div>
-
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
-                                    <span>Caja Chica (Inicio):</span><span id="detail-petty-cash">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
-                                    <span>Total Ventas:</span><span id="detail-total-sales">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                    <span>• Pizzas:</span><span id="detail-pizzas">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                    <span>• Bebidas:</span><span id="detail-drinks">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; margin-left: 10px; color: #888;">
-                                    <span>• Delivery:</span><span id="detail-delivery">0</span>
-                                </div>
-
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--success);">
-                                    <span>+ Ingresos Extra:</span><span id="detail-income">0</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #f44336;">
-                                    <span>- Gastos/Retiros:</span><span id="detail-expense">0</span>
-                                </div>
-
-                                <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
-
-                                <div
-                                    style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
-                                    <span>TOTAL EN CAJA:</span><span id="expected-cash-display"
-                                        style="color: var(--success);">--</span>
-                                </div>
-                                <div
-                                    style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
-                                    <span>DIFERENCIA:</span><span id="diff-display">--</span>
-                                </div>
-                            </div>
+                        <div class="arqueo-total-bar">
+                            Total Contado: <span id="calc-total-display">0</span> Gs
                         </div>
                     </div>
 
-                    <div class="arqueo-footer">
-                        <button id="btn-cancel-opening" class="btn btn-outline" style="border-color: #666; color: #ccc;"
-                            onclick="app.closeModal('modal-stock')">← VOLVER A VENTAS</button>
-                        <button class="btn btn-gold" onclick="app.closeShift()">Cerrar Caja</button>
-                    </div>
+                    <!-- Panel Derecho: Movimientos (Solo cierre) -->
+                    <div id="closing-panels" class="arqueo-mov-panel">
+                        <h3>Resumen y Movimientos</h3>
 
-                    <!-- Apertura fields (hidden by default) -->
-                    <div id="opening-fields" class="hidden arqueo-opening">
-                        <h3 class="brand">Configuración de Apertura</h3>
-                        <div class="opening-grid">
-                            <div><label>Stock Masas</label><input type="number" id="init-stock" placeholder="0"></div>
-                            <div><label>Stock Bebidas</label><input type="number" id="init-stock-drinks"
-                                    placeholder="0">
+                        <div class="arqueo-mov-form">
+                            <input type="text" id="dash-mov-desc" placeholder="Descripción (ej. Sencillo, Pago Hielo)">
+                            <input type="number" id="dash-mov-amount" placeholder="Monto">
+                            <select id="dash-mov-type">
+                                <option value="ingreso">Ingreso (+)</option>
+                                <option value="egreso">Egreso (-)</option>
+                            </select>
+                            <button class="btn btn-gold" onclick="app.saveMovementDashboard()">Agregar</button>
+                        </div>
+
+                        <div id="dash-mov-list" class="arqueo-mov-list"></div>
+                        <div id="dash-mov-summary" class="arqueo-mov-summary"></div>
+
+                        <div id="diff-container" class="arqueo-diff hidden"
+                            style="text-align: left; padding: 15px; border: 1px solid #333; border-radius: 8px; background: rgba(0,0,0,0.3);">
+                            <div
+                                style="font-size: 1.1rem; color: var(--primary-gold); margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;">
+                                BALANCE DE CAJA</div>
+
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #aaa;">
+                                <span>Dotación Inicial:</span><span id="detail-petty-cash">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #fff;">
+                                <span>Ventas Efectivo:</span><span id="detail-total-sales">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--success);">
+                                <span>+ Otros Ingresos:</span><span id="detail-income">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #f44336;">
+                                <span>- Egresos/Gastos:</span><span id="detail-expense">0</span>
+                            </div>
+
+                            <div style="border-top: 1px solid #444; margin: 10px 0;"></div>
+
+                            <div
+                                style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
+                                <span>DEBE HABER:</span><span id="expected-cash-display"
+                                    style="color: var(--success);">0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-top: 5px; color: #ffeb3b;">
+                                <span>DIFERENCIA:</span><span id="diff-display">0</span>
                             </div>
                         </div>
-                        <button class="btn btn-gold" style="width: 100%; margin-top: 15px;"
-                            onclick="app.setStock()">INICIAR
-                            TURNO</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- SIDEBAR UPDATE (Add Close Session) -->
-            <style>
-                .cash-input-row {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-bottom: 8px;
-                    font-size: 0.9rem;
-                }
-
-                .cash-input-row input {
-                    width: 80px;
-                    margin-bottom: 0;
-                    padding: 5px;
-                    text-align: center;
-                }
-
-                /* Notification Badge - App Style */
-                .notification-badge {
-                    position: absolute;
-                    top: -8px;
-                    right: -8px;
-                    background: linear-gradient(135deg, #ff4757, #ff3838);
-                    color: white;
-                    font-size: 0.7rem;
-                    font-weight: bold;
-                    min-width: 20px;
-                    height: 20px;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 0 5px;
-                    box-shadow: 0 2px 8px rgba(255, 56, 56, 0.4);
-                    animation: pulse-badge 2s infinite;
-                    border: 2px solid var(--bg-dark);
-                }
-
-                @keyframes pulse-badge {
-
-                    0%,
-                    100% {
-                        transform: scale(1);
-                    }
-
-                    50% {
-                        transform: scale(1.1);
-                    }
-                }
-
-                /* Change Calculator Modal */
-                .change-modal-content {
-                    background: var(--bg-card);
-                    padding: 30px;
-                    border-radius: 15px;
-                    width: 90%;
-                    max-width: 380px;
-                    border: 2px solid var(--primary-gold);
-                    text-align: center;
-                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-                }
-
-                .change-modal-content h2 {
-                    color: var(--primary-gold);
-                    margin-bottom: 10px;
-                }
-
-                .change-display {
-                    background: linear-gradient(135deg, #1e5630, #2e7d32);
-                    padding: 20px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                }
-
-                .change-display .label {
-                    font-size: 0.9rem;
-                    color: #a5d6a7;
-                    margin-bottom: 5px;
-                }
-
-                .change-display .amount {
-                    font-size: 2.5rem;
-                    font-weight: bold;
-                    color: #4caf50;
-                }
-            </style>
-
-            <!-- Modal: Change Calculator (for COBRAR) -->
-            <div id="modal-change" class="modal hidden">
-                <div class="change-modal-content">
-                    <h2>💰 Cobrar Pedido</h2>
-                    <p id="change-order-info" style="color: #888; margin-bottom: 15px;">#0000 - Cliente</p>
-
-                    <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">Total a Cobrar:</p>
-                        <p id="change-total" style="font-size: 1.8rem; font-weight: bold; color: var(--primary-gold);">
-                            Gs. 0
-                        </p>
-                    </div>
-
-                    <input type="number" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
-                        style="width: 100%; padding: 15px; font-size: 1.1rem; background: #111; border: 2px solid var(--primary-gold); color: white; border-radius: 8px; text-align: center; margin-bottom: 10px;"
-                        oninput="app.calculateModalChange()">
-
-                    <div class="change-display">
-                        <div class="label">💵 Vuelto a entregar:</div>
-                        <div class="amount" id="change-result">Gs. 0</div>
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn" style="flex: 1; background: #555;"
-                            onclick="app.closeModal('modal-change')">CANCELAR</button>
-                        <button class="btn btn-success" style="flex: 1;" onclick="app.confirmPayment()">✓ CONFIRMAR
-                            COBRO</button>
-                    </div>
+                <div class="arqueo-footer">
+                    <button id="btn-cancel-opening" class="btn btn-outline" style="border-color: #666; color: #ccc;"
+                        onclick="app.closeModal('modal-stock')">← CANCELAR / VOLVER</button>
+                    <button id="btn-final-close" class="btn btn-danger" onclick="app.closeShift()"
+                        style="display:none;">Cerrar Turno Definitivo</button>
                 </div>
             </div>
+        </div>
 
-            <!-- Modal: Good Job (End of Shift) -->
-            <div id="modal-good-job" class="modal hidden" style="background: rgba(0,0,0,0.98);">
-                <div style="text-align: center; color: white; animation: fade-in 1s;">
-                    <div style="font-size: 5rem; margin-bottom: 20px;">🎉 🍕 ✨</div>
-                    <h1
-                        style="font-family: var(--font-serif); font-size: 2.5rem; color: var(--primary-gold); margin-bottom: 10px;">
-                        ¡Excelente Trabajo Equipo!</h1>
-                    <p style="font-size: 1.2rem; color: #ccc;">Turno cerrado exitosamente.</p>
-                    <div style="margin-top: 30px; font-size: 0.9rem; color: #888;">
-                        Cerrando sistema en <span id="shutdown-timer"
-                            style="color: var(--primary-gold); font-weight: bold; font-size: 1.2rem;">5</span>
-                        segundos...
-                    </div>
+        <!-- SIDEBAR UPDATE (Add Close Session) -->
+        <style>
+            .cash-input-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                font-size: 0.9rem;
+            }
+
+            .cash-input-row input {
+                width: 80px;
+                margin-bottom: 0;
+                padding: 5px;
+                text-align: center;
+            }
+
+            /* Notification Badge - App Style */
+            .notification-badge {
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                background: linear-gradient(135deg, #ff4757, #ff3838);
+                color: white;
+                font-size: 0.7rem;
+                font-weight: bold;
+                min-width: 20px;
+                height: 20px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 5px;
+                box-shadow: 0 2px 8px rgba(255, 56, 56, 0.4);
+                animation: pulse-badge 2s infinite;
+                border: 2px solid var(--bg-dark);
+            }
+
+            @keyframes pulse-badge {
+
+                0%,
+                100% {
+                    transform: scale(1);
+                }
+
+                50% {
+                    transform: scale(1.1);
+                }
+            }
+
+            /* Change Calculator Modal */
+            .change-modal-content {
+                background: var(--bg-card);
+                padding: 30px;
+                border-radius: 15px;
+                width: 90%;
+                max-width: 380px;
+                border: 2px solid var(--primary-gold);
+                text-align: center;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            }
+
+            .change-modal-content h2 {
+                color: var(--primary-gold);
+                margin-bottom: 10px;
+            }
+
+            .change-display {
+                background: linear-gradient(135deg, #1e5630, #2e7d32);
+                padding: 20px;
+                border-radius: 10px;
+                margin: 20px 0;
+            }
+
+            .change-display .label {
+                font-size: 0.9rem;
+                color: #a5d6a7;
+                margin-bottom: 5px;
+            }
+
+            .change-display .amount {
+                font-size: 2.5rem;
+                font-weight: bold;
+                color: #4caf50;
+            }
+        </style>
+
+        <!-- Modal: Change Calculator (for COBRAR) -->
+        <div id="modal-change" class="modal hidden">
+            <div class="change-modal-content">
+                <h2>💰 Cobrar Pedido</h2>
+                <p id="change-order-info" style="color: #888; margin-bottom: 15px;">#0000 - Cliente</p>
+
+                <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                    <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">Total a Cobrar:</p>
+                    <p id="change-total" style="font-size: 1.8rem; font-weight: bold; color: var(--primary-gold);">
+                        Gs. 0
+                    </p>
+                </div>
+
+                <input type="number" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
+                    style="width: 100%; padding: 15px; font-size: 1.1rem; background: #111; border: 2px solid var(--primary-gold); color: white; border-radius: 8px; text-align: center; margin-bottom: 10px;"
+                    oninput="app.calculateModalChange()">
+
+                <div class="change-display">
+                    <div class="label">💵 Vuelto a entregar:</div>
+                    <div class="amount" id="change-result">Gs. 0</div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" style="flex: 1; background: #555;"
+                        onclick="app.closeModal('modal-change')">CANCELAR</button>
+                    <button class="btn btn-success" style="flex: 1;" onclick="app.confirmPayment()">✓ CONFIRMAR
+                        COBRO</button>
                 </div>
             </div>
+        </div>
 
-            <!-- Firebase SDKs (v8) -->
-            <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-            <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-            <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+        <!-- Modal: Good Job (End of Shift) -->
+        <div id="modal-good-job" class="modal hidden" style="background: rgba(0,0,0,0.98);">
+            <div style="text-align: center; color: white; animation: fade-in 1s;">
+                <div style="font-size: 5rem; margin-bottom: 20px;">🎉 🍕 ✨</div>
+                <h1
+                    style="font-family: var(--font-serif); font-size: 2.5rem; color: var(--primary-gold); margin-bottom: 10px;">
+                    ¡Excelente Trabajo Equipo!</h1>
+                <p style="font-size: 1.2rem; color: #ccc;">Turno cerrado exitosamente.</p>
+                <div style="margin-top: 30px; font-size: 0.9rem; color: #888;">
+                    Cerrando sistema en <span id="shutdown-timer"
+                        style="color: var(--primary-gold); font-weight: bold; font-size: 1.2rem;">5</span>
+                    segundos...
+                </div>
+            </div>
+        </div>
 
-            <!-- Config -->
-            <script src="js/config.js"></script>
+        <!-- Firebase SDKs (v8) -->
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-            <!-- Main Logic -->
-            <script src="js/app.js"></script>
+        <!-- Config -->
+        <script src="js/config.js"></script>
+
+        <!-- Main Logic -->
+        <script src="js/app.js"></script>
 </body>
 
 </html>

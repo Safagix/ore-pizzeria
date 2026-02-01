@@ -406,12 +406,14 @@ const app = {
             document.getElementById('view-cashier').classList.remove('hidden');
             document.getElementById('nav-cashier').classList.remove('hidden');
 
-            // Only request open shift if stock not active (restored state check)
+            // Sync state and UI
+            this.updateStockUI();
+
+            // Only auto-request open shift if stock not active
             if (!APP_STATE.stockActive) {
                 this.requestOpenShift();
-            } else {
-                document.getElementById('diff-container').classList.remove('hidden'); // Show standard dash
             }
+
             this.listenOrdersGeneric();
         } else if (role === 'chef') {
             document.getElementById('view-chef').classList.remove('hidden');
@@ -467,36 +469,55 @@ const app = {
     },
 
     requestOpenShift: function () {
-        document.getElementById('modal-stock').classList.remove('hidden');
-        document.getElementById('opening-fields').classList.remove('hidden');
-        document.getElementById('diff-container').classList.add('hidden');
-        document.getElementById('bills-body').closest('div').parentElement.style.display = 'grid';
+        const modal = document.getElementById('modal-stock');
+        const openingFields = document.getElementById('opening-fields');
+        const closingPanels = document.getElementById('closing-panels');
+        const diffContainer = document.getElementById('diff-container');
+        const btnFinal = document.getElementById('btn-final-close');
+        const title = document.getElementById('modal-stock-title');
 
-        // Hide "Volver a Ventas" during opening to prevent bypass
+        if (modal) modal.classList.remove('hidden');
+        if (openingFields) openingFields.classList.remove('hidden');
+        if (closingPanels) closingPanels.classList.add('hidden'); // Simplified for opening
+        if (diffContainer) diffContainer.classList.add('hidden');
+        if (btnFinal) btnFinal.style.display = 'none';
+        if (title) title.textContent = "Apertura de Turno";
+
+        // Hide "Volver a Ventas" during mandatory opening
         const btnBack = document.getElementById('btn-cancel-opening');
         if (btnBack) btnBack.classList.add('hidden');
     },
 
     requestCloseShift: async function () {
-        document.getElementById('modal-stock').classList.remove('hidden');
-        document.getElementById('opening-fields').classList.add('hidden');
-        document.getElementById('diff-container').classList.remove('hidden');
+        const modal = document.getElementById('modal-stock');
+        const openingFields = document.getElementById('opening-fields');
+        const closingPanels = document.getElementById('closing-panels');
+        const diffContainer = document.getElementById('diff-container');
+        const btnFinal = document.getElementById('btn-final-close');
+        const title = document.getElementById('modal-stock-title');
+
+        if (modal) modal.classList.remove('hidden');
+        if (openingFields) openingFields.classList.add('hidden');
+        if (closingPanels) closingPanels.classList.remove('hidden');
+        if (diffContainer) diffContainer.classList.remove('hidden');
+        if (btnFinal) btnFinal.style.display = 'block';
+        if (title) title.textContent = "Cierre de Caja / Arqueo";
+
         document.getElementById('expected-cash-display').textContent = `Gs. ${APP_STATE.expectedCash.toLocaleString()}`;
 
         // Show "Volver a Ventas" during closing
         const btnBack = document.getElementById('btn-cancel-opening');
         if (btnBack) btnBack.classList.remove('hidden');
 
-        // Reset calculator
+        // Reset calculator for fresh count
         document.querySelectorAll('.cash-calc').forEach(i => i.value = '');
         this.updateDashTotal();
 
-        // Load movements
+        // Load data
         this.renderMovementsDashboard();
-
-        // Calculate and Show Breakdown
         this.updateCloseShiftBreakdown();
     },
+
 
     updateCloseShiftBreakdown: async function () {
         const stats = await this.getTodayBreakdown();
@@ -858,30 +879,43 @@ const app = {
     },
 
     updateStockUI: function () {
-        const stockEl = document.getElementById('stock-display');
-        stockEl.textContent = APP_STATE.stock;
+        const sEl = document.getElementById('stock-display');
+        const dEl = document.getElementById('stock-drinks-display');
+        const pEl = document.getElementById('petty-cash-display');
 
-        // Low stock alert for Masas
-        if (APP_STATE.stock <= 5) {
-            stockEl.style.color = '#f44336';
-            stockEl.style.fontWeight = 'bold';
-        } else {
-            stockEl.style.color = '';
-            stockEl.style.fontWeight = '';
-        }
+        if (sEl) sEl.textContent = APP_STATE.stock;
+        if (dEl) dEl.textContent = APP_STATE.stockDrinks;
+        if (pEl) pEl.textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
 
-        // Drink stock display
-        const drinkStockEl = document.getElementById('stock-drinks-display');
-        if (drinkStockEl) {
-            drinkStockEl.textContent = APP_STATE.stockDrinks;
-            if (APP_STATE.stockDrinks <= 3) {
-                drinkStockEl.style.color = '#f44336';
+        // Color coding for masses
+        if (sEl) {
+            if (APP_STATE.stock <= 5) {
+                sEl.style.color = '#f44336';
+                sEl.style.fontWeight = 'bold';
             } else {
-                drinkStockEl.style.color = '#2196f3';
+                sEl.style.color = '';
+                sEl.style.fontWeight = '';
             }
         }
 
-        document.getElementById('petty-cash-display').textContent = `Gs. ${APP_STATE.pettyCash.toLocaleString()}`;
+        // Toggle Sidebar Action Buttons
+        const btnOpen = document.getElementById('btn-sidebar-open');
+        const btnClose = document.getElementById('btn-sidebar-close');
+
+        if (btnOpen && btnClose) {
+            if (APP_STATE.role === 'cashier') {
+                if (APP_STATE.stockActive) {
+                    btnOpen.classList.add('hidden');
+                    btnClose.classList.remove('hidden');
+                } else {
+                    btnOpen.classList.remove('hidden');
+                    btnClose.classList.add('hidden');
+                }
+            } else {
+                btnOpen.classList.add('hidden');
+                btnClose.classList.add('hidden');
+            }
+        }
     },
 
     // --- CLIENT MANAGEMENT ---
