@@ -166,7 +166,6 @@ const app = {
                 APP_STATE.stockActive = data.stockActive;
                 console.log("♻️ Estado restaurado del LocalStorage");
                 this.updateStockUI();
-                this.updateShiftButtonUI(); // Restore button state
             } else {
                 localStorage.removeItem('ore_pos_state'); // Clear old data
             }
@@ -182,7 +181,6 @@ const app = {
                 APP_STATE.stock = s.masas || 0;
                 APP_STATE.stockDrinks = s.drinks || 0;
                 this.updateStockUI();
-                this.updateShiftButtonUI(); // Sync button state
                 this.saveLocalState();
 
                 // M2 FIX: Notify if stock changed externally
@@ -432,6 +430,14 @@ const app = {
             document.getElementById('view-cashier').classList.remove('hidden');
             document.getElementById('nav-cashier').classList.remove('hidden');
 
+            // Rescue State Logic: Check if there are active sales for today
+            const stats = await this.getTodayBreakdown();
+            if (!APP_STATE.stockActive && stats.total > 0) {
+                APP_STATE.stockActive = true;
+                APP_STATE.expectedCash = stats.total; // Approximate recovery
+                this.showToast("⚠️ Sesión restaurada: Se detectaron ventas activas", "warning");
+            }
+
             // Only request open shift if stock not active (restored state check)
             if (!APP_STATE.stockActive) {
                 this.requestOpenShift();
@@ -452,10 +458,11 @@ const app = {
     },
 
     setStock: function () {
+        const s = parseInt(document.getElementById('init-stock').value);
         const d = parseInt(document.getElementById('init-stock-drinks').value) || 0;
         const calcTotal = APP_STATE._currentCalcTotal || 0;
 
-        if (isNaN(s)) return this.showToast("Debes ingresar el stock de masas", "error");
+        if (isNaN(s)) return alert("Debes ingresar el stock de masas para abrir el turno");
         if (calcTotal === 0) if (!confirm("¿Deseas abrir la caja con Gs. 0?")) return;
 
 
@@ -486,39 +493,9 @@ const app = {
         firebase.database().ref('config/shopStatus').set({ status: 'open', timestamp: Date.now() });
 
         this.updateStockUI();
-        this.updateShiftButtonUI(); // Update button state
-        this.saveLocalState();
+        this.saveLocalState(); // Fix: Persist state
         document.getElementById('modal-stock').classList.add('hidden');
-        this.showToast(`Turno Abierto. Stock: ${s} masas, ${d} bebidas.`, "success");
-    },
-
-    // --- SMART SHIFT BUTTON ---
-    handleShiftToggle: function () {
-        if (APP_STATE.stockActive) {
-            this.requestCloseShift();
-        } else {
-            this.requestOpenShift();
-        }
-    },
-
-    updateShiftButtonUI: function () {
-        const btn = document.getElementById('btn-shift-toggle');
-        if (!btn) return;
-
-        if (APP_STATE.stockActive) {
-            btn.innerHTML = "🔒 CERRAR TURNO";
-            btn.className = "btn btn-outline";
-            btn.style.borderColor = "#555";
-            btn.style.color = "#888";
-            btn.style.animation = "none";
-        } else {
-            btn.innerHTML = "🔓 ABRIR TURNO";
-            btn.className = "btn btn-gold";
-            btn.style.borderColor = "var(--primary-gold)";
-            btn.style.color = "black";
-            // Pulse animation to draw attention
-            btn.style.animation = "pulse 1.5s infinite";
-        }
+        alert(`Turno Abierto. Stock sincronizado: ${s} masas, ${d} bebidas.`);
     },
 
     requestOpenShift: function () {
