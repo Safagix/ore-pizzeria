@@ -568,7 +568,7 @@ const app = {
     },
 
     requestCloseShift: async function () {
-        document.getElementById('modal-stock').classList.remove('hidden');
+        // Direct close conformation - NO MODAL
         if (confirm("¿Estás seguro de que deseas cerrar el turno y la caja?")) {
             try {
                 // 1. Update Shop Status
