@@ -488,6 +488,127 @@
                 </div>
             </div>
 
+
+
+            <!-- SIDEBAR UPDATE (Add Close Session) -->
+            <style>
+                .cash-input-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 8px;
+                    font-size: 0.9rem;
+                }
+
+                .cash-input-row input {
+                    width: 80px;
+                    margin-bottom: 0;
+                    padding: 5px;
+                    text-align: center;
+                }
+
+                /* Notification Badge - App Style */
+                .notification-badge {
+                    position: absolute;
+                    top: -8px;
+                    right: -8px;
+                    background: linear-gradient(135deg, #ff4757, #ff3838);
+                    color: white;
+                    font-size: 0.7rem;
+                    font-weight: bold;
+                    min-width: 20px;
+                    height: 20px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0 5px;
+                    box-shadow: 0 2px 8px rgba(255, 56, 56, 0.4);
+                    animation: pulse-badge 2s infinite;
+                    border: 2px solid var(--bg-dark);
+                }
+
+                @keyframes pulse-badge {
+
+                    0%,
+                    100% {
+                        transform: scale(1);
+                    }
+
+                    50% {
+                        transform: scale(1.1);
+                    }
+                }
+
+                /* Change Calculator Modal */
+                .change-modal-content {
+                    background: var(--bg-card);
+                    padding: 30px;
+                    border-radius: 15px;
+                    width: 90%;
+                    max-width: 380px;
+                    border: 2px solid var(--primary-gold);
+                    text-align: center;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+                }
+
+                .change-modal-content h2 {
+                    color: var(--primary-gold);
+                    margin-bottom: 10px;
+                }
+
+                .change-display {
+                    background: linear-gradient(135deg, #1e5630, #2e7d32);
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                }
+
+                .change-display .label {
+                    font-size: 0.9rem;
+                    color: #a5d6a7;
+                    margin-bottom: 5px;
+                }
+
+                .change-display .amount {
+                    font-size: 2.5rem;
+                    font-weight: bold;
+                    color: #4caf50;
+                }
+            </style>
+
+            <!-- Modal: Change Calculator (for COBRAR) -->
+            <div id="modal-change" class="modal hidden">
+                <div class="change-modal-content">
+                    <h2>💰 Cobrar Pedido</h2>
+                    <p id="change-order-info" style="color: #888; margin-bottom: 15px;">#0000 - Cliente</p>
+
+                    <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">Total a Cobrar:</p>
+                        <p id="change-total" style="font-size: 1.8rem; font-weight: bold; color: var(--primary-gold);">
+                            Gs. 0
+                        </p>
+                    </div>
+
+                    <input type="number" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
+                        style="width: 100%; padding: 15px; font-size: 1.1rem; background: #111; border: 2px solid var(--primary-gold); color: white; border-radius: 8px; text-align: center; margin-bottom: 10px;"
+                        oninput="app.calculateModalChange()">
+
+                    <div class="change-display">
+                        <div class="label">💵 Vuelto a entregar:</div>
+                        <div class="amount" id="change-result">Gs. 0</div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" style="flex: 1; background: #555;"
+                            onclick="app.closeModal('modal-change')">CANCELAR</button>
+                        <button class="btn btn-success" style="flex: 1;" onclick="app.confirmPayment()">✓ CONFIRMAR
+                            COBRO</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL STOCK MOVED HERE -->
             <div id="modal-stock" class="modal hidden">
                 <div class="modal-content arqueo-dashboard">
                     <div class="arqueo-header">
@@ -622,124 +743,6 @@
                         <button class="btn btn-gold" style="width: 100%; margin-top: 15px;"
                             onclick="app.setStock()">INICIAR
                             TURNO</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SIDEBAR UPDATE (Add Close Session) -->
-            <style>
-                .cash-input-row {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-bottom: 8px;
-                    font-size: 0.9rem;
-                }
-
-                .cash-input-row input {
-                    width: 80px;
-                    margin-bottom: 0;
-                    padding: 5px;
-                    text-align: center;
-                }
-
-                /* Notification Badge - App Style */
-                .notification-badge {
-                    position: absolute;
-                    top: -8px;
-                    right: -8px;
-                    background: linear-gradient(135deg, #ff4757, #ff3838);
-                    color: white;
-                    font-size: 0.7rem;
-                    font-weight: bold;
-                    min-width: 20px;
-                    height: 20px;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 0 5px;
-                    box-shadow: 0 2px 8px rgba(255, 56, 56, 0.4);
-                    animation: pulse-badge 2s infinite;
-                    border: 2px solid var(--bg-dark);
-                }
-
-                @keyframes pulse-badge {
-
-                    0%,
-                    100% {
-                        transform: scale(1);
-                    }
-
-                    50% {
-                        transform: scale(1.1);
-                    }
-                }
-
-                /* Change Calculator Modal */
-                .change-modal-content {
-                    background: var(--bg-card);
-                    padding: 30px;
-                    border-radius: 15px;
-                    width: 90%;
-                    max-width: 380px;
-                    border: 2px solid var(--primary-gold);
-                    text-align: center;
-                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-                }
-
-                .change-modal-content h2 {
-                    color: var(--primary-gold);
-                    margin-bottom: 10px;
-                }
-
-                .change-display {
-                    background: linear-gradient(135deg, #1e5630, #2e7d32);
-                    padding: 20px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                }
-
-                .change-display .label {
-                    font-size: 0.9rem;
-                    color: #a5d6a7;
-                    margin-bottom: 5px;
-                }
-
-                .change-display .amount {
-                    font-size: 2.5rem;
-                    font-weight: bold;
-                    color: #4caf50;
-                }
-            </style>
-
-            <!-- Modal: Change Calculator (for COBRAR) -->
-            <div id="modal-change" class="modal hidden">
-                <div class="change-modal-content">
-                    <h2>💰 Cobrar Pedido</h2>
-                    <p id="change-order-info" style="color: #888; margin-bottom: 15px;">#0000 - Cliente</p>
-
-                    <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">Total a Cobrar:</p>
-                        <p id="change-total" style="font-size: 1.8rem; font-weight: bold; color: var(--primary-gold);">
-                            Gs. 0
-                        </p>
-                    </div>
-
-                    <input type="number" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
-                        style="width: 100%; padding: 15px; font-size: 1.1rem; background: #111; border: 2px solid var(--primary-gold); color: white; border-radius: 8px; text-align: center; margin-bottom: 10px;"
-                        oninput="app.calculateModalChange()">
-
-                    <div class="change-display">
-                        <div class="label">💵 Vuelto a entregar:</div>
-                        <div class="amount" id="change-result">Gs. 0</div>
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn" style="flex: 1; background: #555;"
-                            onclick="app.closeModal('modal-change')">CANCELAR</button>
-                        <button class="btn btn-success" style="flex: 1;" onclick="app.confirmPayment()">✓ CONFIRMAR
-                            COBRO</button>
                     </div>
                 </div>
             </div>
