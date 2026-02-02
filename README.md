@@ -101,17 +101,6 @@ git push -u origin main
 
 ---
 
-## 🔐 Usuarios y PINs
-
-| Rol | PIN |
-|-----|-----|
-| Cajero | `1234` |
-| Chef | `0000` |
-| Admin | `admin123` |
-| Servicio | `1111` |
-
----
-
 ## 📚 Documentación
 
 - [PRD (Requerimientos)](prd.md)
