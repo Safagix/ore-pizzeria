@@ -125,7 +125,7 @@ Ejecutar checklist de `TESTING_MANUAL.md` antes de cada deploy.
 
 ## 📞 Soporte
 
-**Desarrollado por:** Antigravity AI + Safag  
+**Desarrollado por:** Safagisa  
 **Versión:** 1.0.0 MVP
 **Última actualización:** 2026-01-23
 
