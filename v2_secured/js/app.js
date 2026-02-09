@@ -2137,3 +2137,7 @@ const app = {
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
+
+// Expose for Console Access
+window.app = app;
+window.APP_STATE = APP_STATE;
