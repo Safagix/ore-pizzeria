@@ -101,17 +101,6 @@ git push -u origin main
 
 ---
 
-## 🔐 Usuarios y PINs
-
-| Rol | PIN |
-|-----|-----|
-| Cajero | `1234` |
-| Chef | `0000` |
-| Admin | `admin123` |
-| Servicio | `1111` |
-
----
-
 ## 📚 Documentación
 
 - [PRD (Requerimientos)](prd.md)
@@ -136,7 +125,7 @@ Ejecutar checklist de `TESTING_MANUAL.md` antes de cada deploy.
 
 ## 📞 Soporte
 
-**Desarrollado por:** Antigravity AI + Safag  
+**Desarrollado por:** Safagisa  
 **Versión:** 1.0.0 MVP
 **Última actualización:** 2026-01-23
 
