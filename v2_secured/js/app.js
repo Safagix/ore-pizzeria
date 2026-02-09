@@ -196,8 +196,8 @@ const app = {
         const initialDrinks = [
             { id: 'coke15', name: 'Coca Cola 1.5L', price: 15000, cat: 'drinks', img: 'img/drinks/coca_15.png' },
             { id: 'coke500', name: 'Coca Cola 500ml', price: 9000, cat: 'drinks', img: 'img/drinks/coca_500.png' },
-            { id: 'water500', name: 'Agua Dasani 500ml', price: 5000, cat: 'drinks', img: 'img/drinks/dasani_500.png' },
-            { id: 'water1', name: 'Agua Dasani 1L', price: 7000, cat: 'drinks', img: 'img/drinks/dasani_1.png' },
+            { id: 'dasani500', name: 'Agua Dasani 500ml', price: 5000, cat: 'drinks', img: 'img/drinks/dasani_500.png' },
+            { id: 'dasani1', name: 'Agua Dasani 1L', price: 7000, cat: 'drinks', img: 'img/drinks/dasani_1.png' },
             { id: 'cokezer500', name: 'Coca Cola Zero 500ml', price: 9000, cat: 'drinks', img: 'img/drinks/coca_zero_500.png' },
             { id: 'cokezer15', name: 'Coca Cola Zero 1.5L', price: 15000, cat: 'drinks', img: 'img/drinks/coca_zero_15.png' }
         ];
