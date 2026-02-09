@@ -194,13 +194,12 @@ const app = {
             { id: 'arr', name: 'El Arriero', price: 50000, cat: 'flavors', img: 'img/pizzas/Arriero.jpg', ingredients: 'Salsa de tomate, queso mozzarella, chorizo picante, cebolla morada, locote en julianas, orégano, aceitunas, salsa picante casera' }
         ];
         const initialDrinks = [
-            { id: 'coke250', name: 'Coca Cola 250ml', price: 5000, cat: 'drinks', img: 'img/drinks/coca_250.png' },
-            { id: 'coke500', name: 'Coca Cola 500ml', price: 9000, cat: 'drinks', img: 'img/drinks/coca_500.png' },
-            { id: 'cokezer500', name: 'Coca Cola Zero 500ml', price: 9000, cat: 'drinks', img: 'img/drinks/coca_zero_500.png' },
             { id: 'coke15', name: 'Coca Cola 1.5L', price: 15000, cat: 'drinks', img: 'img/drinks/coca_15.png' },
-            { id: 'cokezer15', name: 'Coca Cola Zero 1.5L', price: 15000, cat: 'drinks', img: 'img/drinks/coca_zero_15.png' },
-            { id: 'water500', name: 'Agua 500 ml', price: 5000, cat: 'drinks', img: 'img/drinks/water_500.png' },
-            { id: 'water1', name: 'Agua 1 L', price: 7000, cat: 'drinks', img: 'img/drinks/water_1.png' }
+            { id: 'coke500', name: 'Coca Cola 500ml', price: 9000, cat: 'drinks', img: 'img/drinks/coca_500.png' },
+            { id: 'water500', name: 'Agua Dasani 500ml', price: 5000, cat: 'drinks', img: 'img/drinks/dasani_500.png' },
+            { id: 'water1', name: 'Agua Dasani 1L', price: 7000, cat: 'drinks', img: 'img/drinks/dasani_1.png' },
+            { id: 'cokezer500', name: 'Coca Cola Zero 500ml', price: 9000, cat: 'drinks', img: 'img/drinks/coca_zero_500.png' },
+            { id: 'cokezer15', name: 'Coca Cola Zero 1.5L', price: 15000, cat: 'drinks', img: 'img/drinks/coca_zero_15.png' }
         ];
 
         initialFlavors.forEach(p => firebase.database().ref('products/flavors').push(p));
