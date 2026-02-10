@@ -278,8 +278,8 @@ const app = {
 
     initCalculator: function () {
         // Dynamic population of tables
-        const bills = [100000, 50000, 20000];
-        const coins = [10000, 5000, 2000, 1000, 500, 100, 50];
+        const bills = [100000, 50000, 20000, 10000, 5000, 2000];
+        const coins = [1000, 500, 100, 50];
 
         const billsBody = document.getElementById('bills-body');
         const coinsBody = document.getElementById('coins-body');
