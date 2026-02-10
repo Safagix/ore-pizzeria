@@ -762,9 +762,9 @@
                     </p>
                 </div>
 
-                <input type="number" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
+                <input type="tel" id="change-pay-amount" placeholder="¿Con cuánto paga el cliente?"
                     style="width: 100%; padding: 15px; font-size: 1.1rem; background: #111; border: 2px solid var(--primary-gold); color: white; border-radius: 8px; text-align: center; margin-bottom: 10px;"
-                    oninput="app.calculateModalChange()">
+                    oninput="app.calculateModalChange(this)">
 
                 <div class="change-display">
                     <div class="label">💵 Vuelto a entregar:</div>

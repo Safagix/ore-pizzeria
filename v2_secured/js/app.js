@@ -1875,12 +1875,25 @@ const app = {
         setTimeout(() => document.getElementById('change-pay-amount').focus(), 100);
     },
 
-    calculateModalChange: function () {
+    calculateModalChange: function (input) {
+        // Auto-format with dots
+        if (input) {
+            let val = input.value.replace(/\D/g, ''); // Remove non-digits
+            if (val) {
+                val = parseInt(val).toLocaleString('es-PY'); // Format locally (uses dots)
+                input.value = val;
+            }
+        }
+
         const order = APP_STATE.ordersCache.find(o => o.key === APP_STATE._payingOrderKey);
         if (!order) return;
 
         const totalWithDelivery = (order.total || 0) + (order.deliveryFee || 0);
-        const payAmount = parseInt(document.getElementById('change-pay-amount').value) || 0;
+
+        // Parse raw value removing dots
+        const rawVal = document.getElementById('change-pay-amount').value.replace(/\./g, '');
+        const payAmount = parseInt(rawVal) || 0;
+
         const change = payAmount - totalWithDelivery;
 
         const changeEl = document.getElementById('change-result');
