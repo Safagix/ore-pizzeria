@@ -1934,7 +1934,9 @@ const app = {
         APP_STATE._payingOrderKey = null;
 
         // Show change to deliver
-        const payAmount = parseInt(document.getElementById('change-pay-amount').value) || 0;
+        const rawVal = document.getElementById('change-pay-amount').value.replace(/\./g, '');
+        const payAmount = parseInt(rawVal) || 0;
+
         const totalWithDelivery = (order.total || 0) + (order.deliveryFee || 0);
         const change = payAmount - totalWithDelivery;
 
