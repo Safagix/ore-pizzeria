@@ -432,10 +432,23 @@ const app = {
 
     setStock: function () {
         const s = parseInt(document.getElementById('init-stock').value);
-        const d = parseInt(document.getElementById('init-stock-drinks').value) || 0;
+
+        // Granular Drink Stock Collection
+        let totalDrinks = 0;
+        const drinkDetails = {};
+        const drinkInputs = document.querySelectorAll('.drink-stock-input');
+
+        drinkInputs.forEach(input => {
+            const val = parseInt(input.value) || 0;
+            totalDrinks += val;
+            drinkDetails[input.dataset.id] = {
+                name: input.dataset.name,
+                stock: val
+            };
+        });
 
         // Validation: Integrity of Inventory (Vuln Mitigation)
-        if (s < 0 || d < 0) {
+        if (s < 0 || totalDrinks < 0) {
             return alert("Error de Integridad: El stock no puede ser negativo.");
         }
         const calcTotal = APP_STATE._currentCalcTotal || 0;
@@ -445,7 +458,7 @@ const app = {
 
 
         APP_STATE.stock = s;
-        APP_STATE.stockDrinks = d;
+        APP_STATE.stockDrinks = totalDrinks;
         APP_STATE.pettyCash = calcTotal;
         APP_STATE.expectedCash = calcTotal;
         APP_STATE.stockActive = true;
@@ -464,7 +477,9 @@ const app = {
         // Fix: Sync Initial Stock to DB (Vuln 5)
         firebase.database().ref('stock').set({
             masas: s,
-            drinks: d
+            drinks: totalDrinks,
+            drinkDetails: drinkDetails,
+            timestamp: Date.now()
         });
 
         // Reset shop status to open
@@ -473,7 +488,7 @@ const app = {
         this.updateStockUI();
         this.saveLocalState(); // Fix: Persist state
         document.getElementById('modal-stock').classList.add('hidden');
-        alert(`Turno Abierto. Stock sincronizado: ${s} masas, ${d} bebidas.`);
+        alert(`Turno Abierto. Stock: ${s} masas, ${totalDrinks} bebidas.`);
     },
 
     requestOpenShift: function () {
@@ -494,6 +509,22 @@ const app = {
         // Hide "Volver a Ventas" during mandatory opening
         const btnBack = document.getElementById('btn-cancel-opening');
         if (btnBack) btnBack.classList.add('hidden');
+
+        // Dynamic Generation of Drink Inputs
+        const list = document.getElementById('drink-stock-list');
+        if (list) {
+            list.innerHTML = '';
+            const drinks = APP_STATE.products.drinks;
+            drinks.forEach(d => {
+                list.innerHTML += `
+                    <div style="background: #1a1a1a; padding: 8px; border-radius: 5px; border: 1px solid #333;">
+                        <label style="display: block; font-size: 0.75rem; color: #888; margin-bottom: 4px;">${d.name}</label>
+                        <input type="number" class="drink-stock-input" data-id="${d.id}" data-name="${d.name}" placeholder="0"
+                            style="width: 100%; padding: 5px; background: #000; border: 1px solid #444; color: white; border-radius: 3px;">
+                    </div>
+                `;
+            });
+        }
     },
 
     requestCloseShift: async function () {
