@@ -2030,7 +2030,7 @@ const app = {
             return;
         }
 
-        container.innerHTML = ordersToShow.reverse().map(o => {
+        container.innerHTML = ordersToShow.map(o => {
             const isPaid = o.payStatus === 'paid';
             const isLocal = o.type === 'Local';
             const isReady = o.status === 'ready';
