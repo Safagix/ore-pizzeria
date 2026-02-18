@@ -144,7 +144,8 @@
                         <!-- Delivery Fee (hidden by default) -->
                         <div id="delivery-fee-container" class="hidden" style="margin-bottom: 10px;">
                             <input type="number" id="delivery-fee" placeholder="Monto Delivery (Gs.)"
-                                style="width: 100%; padding: 10px; background: #222; border: 1px solid #f57c00; color: white;">
+                                style="width: 100%; padding: 10px; background: #222; border: 1px solid #f57c00; color: white;"
+                                oninput="app.calculateChange()">
                         </div>
 
                         <!-- 2. Payment Method -->

@@ -1577,7 +1577,7 @@ const app = {
 
     calculateChange: function (input) {
         // Auto-format with dots
-        if (input) {
+        if (input && input.id === 'pay-amount') {
             let val = input.value.replace(/\D/g, '');
             if (val) {
                 val = parseInt(val).toLocaleString('es-PY');
@@ -1586,20 +1586,38 @@ const app = {
         }
 
         const totalText = document.getElementById('cart-total').textContent;
-        const total = parseInt(totalText.replace(/\D/g, '')) || 0;
+        const cartTotal = parseInt(totalText.replace(/\D/g, '')) || 0;
+
+        // Add Delivery Fee if applicable
+        let deliveryFee = 0;
+        const orderType = document.getElementById('order-type').value;
+        if (orderType === 'Delivery') {
+            deliveryFee = parseInt(document.getElementById('delivery-fee').value) || 0;
+        }
+
+        const finalTotal = cartTotal + deliveryFee;
 
         // Parse pay amount removing dots
         const rawPay = document.getElementById('pay-amount').value.replace(/\./g, '');
         const payAmount = parseInt(rawPay) || 0;
-        const change = payAmount - total;
+
+        const change = payAmount - finalTotal;
 
         const changeEl = document.getElementById('change-amount');
+
+        // Validation: Insufficient Amount
+        if (payAmount > 0 && payAmount < finalTotal) {
+            changeEl.textContent = `Faltan Gs. ${(finalTotal - payAmount).toLocaleString()}`;
+            changeEl.style.color = '#f44336'; // Red
+            return;
+        }
+
         if (change >= 0) {
             changeEl.textContent = `Gs. ${change.toLocaleString()}`;
             changeEl.style.color = 'var(--success)';
         } else {
             changeEl.textContent = `Gs. 0`;
-            changeEl.style.color = '#888';
+            changeEl.style.color = '#888'; // Grey
         }
     },
 
