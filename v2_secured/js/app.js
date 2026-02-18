@@ -1575,10 +1575,22 @@ const app = {
         this.calculateChange(); // Update change display
     },
 
-    calculateChange: function () {
+    calculateChange: function (input) {
+        // Auto-format with dots
+        if (input) {
+            let val = input.value.replace(/\D/g, '');
+            if (val) {
+                val = parseInt(val).toLocaleString('es-PY');
+                input.value = val;
+            }
+        }
+
         const totalText = document.getElementById('cart-total').textContent;
         const total = parseInt(totalText.replace(/\D/g, '')) || 0;
-        const payAmount = parseInt(document.getElementById('pay-amount').value) || 0;
+
+        // Parse pay amount removing dots
+        const rawPay = document.getElementById('pay-amount').value.replace(/\./g, '');
+        const payAmount = parseInt(rawPay) || 0;
         const change = payAmount - total;
 
         const changeEl = document.getElementById('change-amount');
@@ -1653,11 +1665,21 @@ const app = {
 
         // Items logic for stock dec (simplified for validation)
         const pizzasCount = itemsToSend.filter(i => i.type === 'pizza').length;
-        const drinksCount = itemsToSend.filter(i => i.type === 'drink').length;
+        // const drinksCount = itemsToSend.filter(i => i.type === 'drink').length; // Granular control handles this separately if needed
 
-        // --- STOCK TRANSACTION REMOVED (Reverting to "As Before" per user request) ---
-        // We will do optimistic local check or simple one-time check if needed, 
-        // but primarily we just process the order to ensure UX flow works.
+        // --- STOCK TRANSACTION (Restored & Fixed) ---
+        if (APP_STATE.stockActive) {
+            APP_STATE.stock -= pizzasCount;
+            if (APP_STATE.stock < 0) APP_STATE.stock = 0; // Prevent negative stock locally
+
+            // Update generic stock counters in DB
+            APP_STATE.dbRef.root.child('stock').update({
+                masas: APP_STATE.stock
+            });
+
+            this.updateStockUI();
+            this.saveLocalState();
+        }
 
         // Create Order Object
         const self = this;
