@@ -7,13 +7,17 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1a1a1a">
+    <!-- Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Ore Artesanal | POS</title>
     <!-- Fonts -->
     <link
         href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
         rel="stylesheet">
     <!-- Local Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=2.2">
     <!-- Excel Lib -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -178,9 +182,22 @@
 
                         <!-- 4. Total -->
                         <div
-                            style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;">
-                            <span>Total</span>
-                            <span id="cart-total" style="color: var(--primary-gold);">Gs. 0</span>
+                            style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 1rem; color: #ccc; margin-bottom: 5px;">
+                                <span>Subtotal</span>
+                                <span id="cart-total">Gs. 0</span>
+                            </div>
+                            <div id="delivery-div" class="hidden"
+                                style="display: flex; justify-content: space-between; font-size: 1rem; color: #ccc; margin-bottom: 5px;">
+                                <span>Delivery</span>
+                                <span id="cart-delivery-display">Gs. 0</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-top: 5px; border-top: 1px dashed #444; padding-top: 5px;">
+                                <span>TOTAL A COBRAR</span>
+                                <span id="cart-final-total" style="color: var(--primary-gold);">Gs. 0</span>
+                            </div>
                         </div>
 
                         <!-- 5. Change Calculator -->
@@ -812,10 +829,10 @@
         <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
         <!-- Config -->
-        <script src="js/config.js"></script>
+        <script src="js/config.js?v=2.2"></script>
 
         <!-- Main Logic -->
-        <script src="js/app.js"></script>
+        <script src="js/app.js?v=2.2"></script>
 </body>
 
 </html>

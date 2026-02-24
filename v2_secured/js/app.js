@@ -876,6 +876,9 @@ const app = {
                     // 1. Limpiar almacenamiento local para obligar a nueva apertura
                     localStorage.removeItem('ore_pos_state');
 
+                    // 1.5 Limpiar movimientos del turno cerrado
+                    firebase.database().ref('movements').remove();
+
                     // 2. Notificar a TODOS (Cajero + Chef) que el turno cerró
                     firebase.database().ref('config/shopStatus').set({
                         status: 'closed',
@@ -1597,6 +1600,21 @@ const app = {
 
         const finalTotal = cartTotal + deliveryFee;
 
+        const finalTotalEl = document.getElementById('cart-final-total');
+        if (finalTotalEl) {
+            finalTotalEl.textContent = `Gs. ${finalTotal.toLocaleString()}`;
+        }
+        const deliveryDisplayEl = document.getElementById('cart-delivery-display');
+        const deliveryDiv = document.getElementById('delivery-div');
+        if (deliveryDisplayEl && deliveryDiv) {
+            if (deliveryFee > 0) {
+                deliveryDiv.classList.remove('hidden');
+                deliveryDisplayEl.textContent = `Gs. ${deliveryFee.toLocaleString()}`;
+            } else {
+                deliveryDiv.classList.add('hidden');
+            }
+        }
+
         // Parse pay amount removing dots
         const rawPay = document.getElementById('pay-amount').value.replace(/\./g, '');
         const payAmount = parseInt(rawPay) || 0;
@@ -1685,20 +1703,6 @@ const app = {
         const pizzasCount = itemsToSend.filter(i => i.type === 'pizza').length;
         // const drinksCount = itemsToSend.filter(i => i.type === 'drink').length; // Granular control handles this separately if needed
 
-        // --- STOCK TRANSACTION (Restored & Fixed) ---
-        if (APP_STATE.stockActive) {
-            APP_STATE.stock -= pizzasCount;
-            if (APP_STATE.stock < 0) APP_STATE.stock = 0; // Prevent negative stock locally
-
-            // Update generic stock counters in DB
-            APP_STATE.dbRef.root.child('stock').update({
-                masas: APP_STATE.stock
-            });
-
-            this.updateStockUI();
-            this.saveLocalState();
-        }
-
         // Create Order Object
         const self = this;
         this.getNextId(function (seqId) {
@@ -1757,22 +1761,32 @@ const app = {
                 } else {
                     alert(`Pedido Enviado (${payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'})`);
 
-                    // DECREMENT STOCK (Post-order, optimistic)
-                    const stockRef = firebase.database().ref('stock');
-                    stockRef.transaction(current => {
-                        if (!current) return;
+                    // DECREMENT STOCK (Post-order)
+                    if (APP_STATE.stockActive) {
+                        const stockRef = firebase.database().ref('stock');
                         const pizzasCount = itemsToSend.filter(i => i.type === 'pizza').length;
                         const drinksCount = itemsToSend.filter(i => i.type === 'drink').length;
-                        return {
-                            masas: (current.masas || 0) - pizzasCount,
-                            drinks: (current.drinks || 0) - drinksCount
-                        };
-                    });
 
-                    // Update Local UI
-                    APP_STATE.stock -= itemsToSend.filter(i => i.type === 'pizza').length;
-                    APP_STATE.stockDrinks -= itemsToSend.filter(i => i.type === 'drink').length;
-                    self.updateStockUI();
+                        stockRef.transaction(current => {
+                            if (!current) return;
+                            let newMasas = (current.masas || 0) - pizzasCount;
+                            let newDrinks = (current.drinks || 0) - drinksCount;
+                            if (newMasas < 0) newMasas = 0;
+                            if (newDrinks < 0) newDrinks = 0;
+                            return {
+                                masas: newMasas,
+                                drinks: newDrinks
+                            };
+                        });
+
+                        // Update Local UI
+                        APP_STATE.stock -= pizzasCount;
+                        if (APP_STATE.stock < 0) APP_STATE.stock = 0;
+                        APP_STATE.stockDrinks -= drinksCount;
+                        if (APP_STATE.stockDrinks < 0) APP_STATE.stockDrinks = 0;
+                        self.updateStockUI();
+                        self.saveLocalState();
+                    }
 
                     // AUTO-SAVE CLIENT
                     const isNew = !APP_STATE.clients.some(c => c.name.toLowerCase() === safeCustomerName.toLowerCase());
@@ -2044,7 +2058,26 @@ const app = {
 
         // Mark as cancelled in Firebase
         APP_STATE.dbRef.child(key).update({ status: 'cancelled' });
-        alert("Pedido ANULADO. Stock restaurado.");
+
+        // Restore items back to cart
+        if (order.items && order.items.length > 0) {
+            APP_STATE.cart = [...order.items];
+            this.renderCart();
+            document.getElementById('customer-name').value = order.customer || '';
+            document.getElementById('order-type').value = order.type || 'Local';
+            document.getElementById('payment-method').value = order.method || 'Efectivo';
+            if (order.type === 'Delivery') {
+                document.getElementById('delivery-fee-container').classList.remove('hidden');
+                document.getElementById('delivery-fee').value = order.deliveryFee || '';
+            } else {
+                document.getElementById('delivery-fee-container').classList.add('hidden');
+                document.getElementById('delivery-fee').value = '';
+            }
+            this.switchTab('order');
+            alert("Pedido ANULADO. Stock restaurado y los productos han regresado al carrito.");
+        } else {
+            alert("Pedido ANULADO. Stock restaurado.");
+        }
     },
 
     // --- CHEF LOGIC ---
