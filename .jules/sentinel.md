@@ -1,0 +1,4 @@
+## 2025-05-22 - [Stored XSS and Naive Entity Decoding]
+**Vulnerability:** User-controlled data (customer names, movement descriptions, product names, and item notes) was injected directly into the DOM via `innerHTML` without sanitization. Furthermore, naive HTML entity encoding (e.g., escaping single quotes to &#039;) was used inside JavaScript inline event handlers like `onclick`, which browsers decode before execution, leading to potential XSS or script errors.
+**Learning:** Naive HTML escaping is insufficient for attributes that are interpreted as JavaScript by the browser. Stored XSS in one part of the application can compromise other roles (e.g., Chef or Admin) when they view the malicious data.
+**Prevention:** Always sanitize data injected into `innerHTML`. Use `data-*` attributes to store user-controlled strings and access them via `this.dataset` in event handlers to avoid issues with entity decoding and ensure script integrity.
