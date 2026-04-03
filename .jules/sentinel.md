@@ -1,0 +1,4 @@
+## 2024-11-20 - Improper XSS Prevention in Inline Event Handlers
+**Vulnerability:** Stored XSS via user-controlled data (like customer names) injected into inline `onclick` attributes.
+**Learning:** Naive HTML entity encoding (e.g., escaping single quotes to `&#039;`) is insufficient for data injected directly into JavaScript contexts like `onclick="..."`. Browsers decode these entities *before* the JavaScript engine executes the string, which can lead to broken syntax or continued XSS if the payload is crafted to bypass the encoding.
+**Prevention:** Use `data-*` attributes to store user-controlled data and access them via `this.dataset` within the event handler. This separates the data from the executable script context, ensuring the browser treats the input as a string literal rather than part of the command.
