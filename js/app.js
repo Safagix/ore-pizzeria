@@ -30,6 +30,16 @@ const APP_STATE = {
 };
 
 const app = {
+    escapeHtml: function (text) {
+        if (!text) return text;
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     init: function () {
         const loader = document.getElementById('loader');
         try {
@@ -396,14 +406,18 @@ const app = {
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${this.escapeHtml(m.timestamp)}</small>
+                                <span>${this.escapeHtml(m.desc)}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
                                     ${m.type === 'ingreso' ? '+' : '-'} ${m.amount.toLocaleString()}
                                 </span>
-                                <button class="btn-mov-delete" onclick="app.deleteMovement('${key}', '${m.type}', ${m.amount})">×</button>
+                                <button class="btn-mov-delete"
+                                        data-key="${this.escapeHtml(key)}"
+                                        data-type="${this.escapeHtml(m.type)}"
+                                        data-amount="${m.amount}"
+                                        onclick="app.deleteMovement(this)">×</button>
                             </div>
                         </div>
                     `;
@@ -415,7 +429,11 @@ const app = {
         });
     },
 
-    deleteMovement: function (key, type, amount) {
+    deleteMovement: function (el) {
+        const key = typeof el === 'string' ? el : el.dataset.key;
+        const type = typeof el === 'string' ? arguments[1] : el.dataset.type;
+        const amount = typeof el === 'string' ? arguments[2] : parseInt(el.dataset.amount);
+
         if (!confirm("¿Eliminar este movimiento?")) return;
 
         firebase.database().ref('movements').child(key).remove((error) => {
@@ -598,12 +616,13 @@ const app = {
 
         container.innerHTML = matches.map(c => `
             <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
+                 data-name="${this.escapeHtml(c.name)}" onclick="app.selectClient(this)">${this.escapeHtml(c.name)}</div>
         `).join('');
         container.classList.remove('hidden');
     },
 
-    selectClient: function (name) {
+    selectClient: function (el) {
+        const name = typeof el === 'string' ? el : el.dataset.name;
         document.getElementById('customer-name').value = name;
         document.getElementById('client-suggestions').classList.add('hidden');
     },
@@ -631,16 +650,17 @@ const app = {
 
         list.innerHTML = filtered.map(c => `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${this.escapeHtml(c.name)}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" data-name="${this.escapeHtml(c.name)}" onclick="app.selectClient(this); app.switchTab('order')">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" data-name="${this.escapeHtml(c.name)}" onclick="app.deleteClient(this)">ELIMINAR</button>
                 </div>
             </div>
         `).join('');
     },
 
-    deleteClient: function (name) {
+    deleteClient: function (el) {
+        const name = typeof el === 'string' ? el : el.dataset.name;
         if (!confirm(`¿Eliminar a ${name}?`)) return;
         // In this implementation names are unique enough or we could find key
         firebase.database().ref('clients').orderByChild('name').equalTo(name).once('value', snap => {
@@ -783,10 +803,10 @@ const app = {
                 pContainer.innerHTML = '<p style="color:#666; text-align:center;">Cargando sabores...</p>';
             } else {
                 pContainer.innerHTML = APP_STATE.products.flavors.map(f => `
-                    <div class="flavor-card" id="card-${f.id}" onclick="app.selectFlavor('${f.id}')">
-                        <div class="flavor-img" ${f.img ? `style="background-image: url('${f.img}'); background-size: cover;"` : ''}></div>
-                        <span style="font-weight: bold; color: #dac0a3;">${f.name}</span>
-                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${f.ingredients}</p>` : ''}
+                    <div class="flavor-card" id="card-${f.id}" data-id="${this.escapeHtml(f.id)}" onclick="app.selectFlavor(this)">
+                        <div class="flavor-img" ${f.img ? `style="background-image: url('${this.escapeHtml(f.img)}'); background-size: cover;"` : ''}></div>
+                        <span style="font-weight: bold; color: #dac0a3;">${this.escapeHtml(f.name)}</span>
+                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${this.escapeHtml(f.ingredients)}</p>` : ''}
                         <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
                     </div>
                 `).join('');
@@ -797,9 +817,9 @@ const app = {
         const dContainer = document.getElementById('drinks-container');
         if (dContainer) {
             dContainer.innerHTML = APP_STATE.products.drinks.map(d => `
-                <div class="flavor-card" onclick="app.addDrink('${d.id}')">
-                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${d.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
-                    <span style="font-weight: bold; font-size: 0.9rem;">${d.name}</span>
+                <div class="flavor-card" data-id="${this.escapeHtml(d.id)}" onclick="app.addDrink(this)">
+                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${this.escapeHtml(d.img)}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
+                    <span style="font-weight: bold; font-size: 0.9rem;">${this.escapeHtml(d.name)}</span>
                     <span style="color: var(--primary-gold);">Gs. ${d.price.toLocaleString()}</span>
                 </div>
             `).join('');
@@ -822,7 +842,8 @@ const app = {
         document.querySelectorAll('.flavor-card').forEach(c => c.classList.remove('selected'));
     },
 
-    selectFlavor: function (id) {
+    selectFlavor: function (el) {
+        const id = typeof el === 'string' ? el : el.dataset.id;
         const card = document.getElementById(`card-${id}`);
         const max = APP_STATE.pizzaMode === 'full' ? 1 : 2;
 
@@ -845,7 +866,8 @@ const app = {
         }
     },
 
-    addDrink: function (id) {
+    addDrink: function (el) {
+        const id = typeof el === 'string' ? el : el.dataset.id;
         const item = APP_STATE.products.drinks.find(d => d.id === id);
         const notes = document.getElementById('item-notes').value;
         APP_STATE.cart.push({
@@ -899,8 +921,8 @@ const app = {
             total += item.price;
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${this.escapeHtml(item.name)}</div>
+                <div class="cart-item-desc">${this.escapeHtml(item.notes) || ''}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
                 <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
             </div>`;
@@ -1103,23 +1125,24 @@ const app = {
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
                     ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${o.customer || 'S/N'}</div>
+                    <div class="ticket-header">#${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}</div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
-                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : o.status)}<br>
+                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : this.escapeHtml(o.status))}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" onclick="app.markPaid('${o.key}')">COBRAR</button>` : ''}
-                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" onclick="app.editOrder('${o.key}')">EDITAR</button>` : ''}
-                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" onclick="app.cancelOrder('${o.key}')">ANULAR</button>` : ''}
+                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" data-key="${this.escapeHtml(o.key)}" onclick="app.markPaid(this)">COBRAR</button>` : ''}
+                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" data-key="${this.escapeHtml(o.key)}" onclick="app.editOrder(this)">EDITAR</button>` : ''}
+                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" data-key="${this.escapeHtml(o.key)}" onclick="app.cancelOrder(this)">ANULAR</button>` : ''}
                     </div>
                 </div>
             `;
         });
     },
 
-    markPaid: function (key) {
+    markPaid: function (el) {
+        const key = typeof el === 'string' ? el : el.dataset.key;
         const order = APP_STATE.ordersCache.find(o => o.key === key);
         if (order && order.payStatus === 'pending') {
             // Update shift stats
@@ -1143,7 +1166,8 @@ const app = {
         }
     },
 
-    editOrder: function (key) {
+    editOrder: function (el) {
+        const key = typeof el === 'string' ? el : el.dataset.key;
         const order = APP_STATE.ordersCache.find(o => o.key === key);
         if (!order) return;
 
@@ -1166,7 +1190,8 @@ const app = {
         alert(`Editando Pedido #${order.id}`);
     },
 
-    cancelOrder: function (key) {
+    cancelOrder: function (el) {
+        const key = typeof el === 'string' ? el : el.dataset.key;
         const order = APP_STATE.ordersCache.find(o => o.key === key);
         if (!order) return;
 
@@ -1228,15 +1253,15 @@ const app = {
             const isReady = o.status === 'ready';
 
             let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
+                <li>${this.escapeHtml(i.name)} ${i.notes ? `<br><small style='color:#f57c00'>(${this.escapeHtml(i.notes)})</small>` : ''}</li>
             `).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}</span>
+                    <span>${this.escapeHtml(o.timestamp)}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
@@ -1246,19 +1271,21 @@ const app = {
                 </div>
                 <div class="ticket-footer">
                     ${isReady
-                    ? `<button class="btn btn-outline" style="width:100%; border-color:#888; color:#888;" onclick="app.undoReady('${o.key}')">DESMARCAR (ERROR)</button>`
-                    : `<button class="btn btn-gold" style="width:100%" onclick="app.orderReady('${o.key}')">MARCAR LISTO</button>`
+                    ? `<button class="btn btn-outline" style="width:100%; border-color:#888; color:#888;" data-key="${this.escapeHtml(o.key)}" onclick="app.undoReady(this)">DESMARCAR (ERROR)</button>`
+                    : `<button class="btn btn-gold" style="width:100%" data-key="${this.escapeHtml(o.key)}" onclick="app.orderReady(this)">MARCAR LISTO</button>`
                 }
                 </div>
             </div>`;
         }).join('');
     },
 
-    undoReady: function (key) {
+    undoReady: function (el) {
+        const key = typeof el === 'string' ? el : el.dataset.key;
         APP_STATE.dbRef.child(key).update({ status: 'cooking' });
     },
 
-    orderReady: function (key) {
+    orderReady: function (el) {
+        const key = typeof el === 'string' ? el : el.dataset.key;
         APP_STATE.dbRef.child(key).update({ status: 'ready' });
     },
 
