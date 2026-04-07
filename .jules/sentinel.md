@@ -1,0 +1,4 @@
+## 2026-04-07 - [XSS Protection in Event Handlers]
+**Vulnerability:** XSS in `onclick` attributes through string interpolation of user-controlled data.
+**Learning:** Naive HTML entity encoding (e.g., escaping single quotes to `&#039;`) is insufficient for data placed inside inline JavaScript event handlers. Browsers decode these entities before executing the script, which can lead to syntax errors if the data contains a single quote, or even XSS if the data is maliciously crafted.
+**Prevention:** Avoid interpolating user-controlled data directly into `onclick` or other inline event handler strings. Instead, use `data-*` attributes to store the data and access it within the handler using `this.dataset`. Sanitizing the data placed in the `data-*` attribute with `escapeHtml` is still necessary to prevent attribute injection.
