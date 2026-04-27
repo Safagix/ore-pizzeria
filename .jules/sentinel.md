@@ -1,0 +1,4 @@
+## 2025-05-14 - Client-Side Authentication Architecture Gap
+**Vulnerability:** Hardcoded plaintext credentials and reliance on client-side logic for access control.
+**Learning:** The application lacks a backend for credential verification. While hashing PINs in the client prevents casual inspection of the source code, it remains a "speed bump" because an attacker can manipulate the client-side JavaScript execution (e.g., via the browser console) to bypass the `if` check entirely. Additionally, `crypto.subtle` requires a Secure Context (HTTPS/localhost), meaning the auth flow fails silently or errors out on insecure origins.
+**Prevention:** Architectural security requires server-side authentication (e.g., Firebase Auth) where the server issues a token after verifying credentials, and security rules enforce access based on that token.
