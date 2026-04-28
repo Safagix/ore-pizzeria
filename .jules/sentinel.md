@@ -1,0 +1,4 @@
+## 2025-05-15 - [Client-side Hashing Speed Bump]
+**Vulnerability:** Hardcoded plaintext PINs in `js/app.js` allowed any user to discover administrative credentials via browser DevTools.
+**Learning:** Moving to SHA-256 hashing on the client side is only a "speed bump" for short numeric PINs (4 digits). An attacker can pre-calculate or brute-force these hashes in milliseconds. Furthermore, I discovered that the `v2_secured` reference directory contained an incorrect hash for the 'service' role, highlighting the risk of manual hash management.
+**Prevention:** Robust security requires server-side credential verification. If client-side hashing must be used as a deterrent, it should include unique salts per role and use a computationally expensive key derivation function (like Argon2 or PBKDF2) to slow down brute-force attempts.
