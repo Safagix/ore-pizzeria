@@ -30,6 +30,20 @@ const APP_STATE = {
 };
 
 const app = {
+    _AUTH_HASHES: {
+        'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
+        'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0',
+        'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
+        'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c'
+    },
+
+    hashPin: async function (pin) {
+        const msgBuffer = new TextEncoder().encode(pin);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    },
+
     init: function () {
         const loader = document.getElementById('loader');
         try {
@@ -242,21 +256,20 @@ const app = {
     },
 
     // --- AUTH & NAV ---
-    login: function () {
+    login: async function () {
         const role = document.getElementById('role-select').value;
         const pin = document.getElementById('login-pin').value;
 
         if (!role) return alert("Selecciona un rol");
+        if (!pin) return alert("Ingresa el PIN");
 
-        // Simple Auth Logic (In production, use Firebase Auth or fetch from DB)
-        const CREDENTIALS = {
-            'cashier': '1234',
-            'chef': '0000',
-            'admin': 'admin123',
-            'service': '1111'
-        };
+        if (!window.crypto || !window.crypto.subtle) {
+            return alert("Error de Seguridad: Este navegador no soporta criptografía segura o no estás en un contexto seguro (HTTPS/Localhost).");
+        }
 
-        if (pin !== CREDENTIALS[role]) {
+        const pinHash = await app.hashPin(pin);
+
+        if (pinHash !== app._AUTH_HASHES[role]) {
             return alert("PIN Incorrecto para " + role.toUpperCase());
         }
 

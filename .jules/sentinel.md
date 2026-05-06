@@ -1,0 +1,4 @@
+## 2026-05-06 - Hashing Hardcoded Credentials in Vanilla JS
+**Vulnerability:** Hardcoded plaintext PINs were stored in a local variable within the `login` function in `js/app.js`.
+**Learning:** Hardcoded secrets in client-side code are easily discoverable via browser dev tools or by inspecting the source. While client-side hashing is a "speed bump" (as logic can be bypassed in the console), it significantly raises the bar for casual exploitation and is a core part of defense-in-depth when server-side auth is not yet implemented.
+**Prevention:** Always hash credentials before storage, even in the client. Use the Web Crypto API (`crypto.subtle`) for secure, standard implementations of hashing algorithms like SHA-256. Avoid storing secrets as local variables; use member properties or environment variables where possible.
