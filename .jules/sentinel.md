@@ -1,0 +1,4 @@
+## 2026-05-11 - Securing Client-Side Authentication and Preventing XSS
+**Vulnerability:** Plaintext staff and admin PINs were hardcoded in `js/app.js`, and user-controlled data was being injected into the DOM without sanitization, leading to XSS risks.
+**Learning:** In projects without a backend, developers often take shortcuts for "internal" tools by using plaintext credentials. This makes the system trivial to compromise if the source code is accessible. Additionally, the lack of sanitization utilities led to insecure patterns like using template literals directly in `innerHTML`.
+**Prevention:** Always use cryptographic hashes (SHA-256 at minimum) for authentication even on the client side to avoid exposing secrets. Implement and enforce the use of a centralized `escapeHtml` utility for all DOM manipulations involving dynamic data.

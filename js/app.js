@@ -242,22 +242,41 @@ const app = {
     },
 
     // --- AUTH & NAV ---
-    login: function () {
+    escapeHtml: function (text) {
+        if (!text) return text;
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
+    hashPin: async function (pin) {
+        const msgBuffer = new TextEncoder().encode(pin);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    },
+
+    login: async function () {
         const role = document.getElementById('role-select').value;
         const pin = document.getElementById('login-pin').value;
 
         if (!role) return alert("Selecciona un rol");
+        if (!pin) return alert("Ingresa el PIN");
 
-        // Simple Auth Logic (In production, use Firebase Auth or fetch from DB)
-        const CREDENTIALS = {
-            'cashier': '1234',
-            'chef': '0000',
-            'admin': 'admin123',
-            'service': '1111'
+        const HASHES = {
+            'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
+            'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0',
+            'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
+            'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c'
         };
 
-        if (pin !== CREDENTIALS[role]) {
-            return alert("PIN Incorrecto para " + role.toUpperCase());
+        const pinHash = await this.hashPin(pin);
+
+        if (pinHash !== HASHES[role]) {
+            return alert("PIN Incorrecto");
         }
 
         APP_STATE.role = role;
@@ -397,7 +416,7 @@ const app = {
                         <div class="dash-mov-item">
                             <div style="flex:1">
                                 <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <span>${this.escapeHtml(m.desc)}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
@@ -1103,7 +1122,7 @@ const app = {
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
                     ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${o.customer || 'S/N'}</div>
+                    <div class="ticket-header">#${o.id} - ${this.escapeHtml(o.customer || 'S/N')}</div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
                         Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : o.status)}<br>
@@ -1228,14 +1247,14 @@ const app = {
             const isReady = o.status === 'ready';
 
             let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
+                <li>${this.escapeHtml(i.name)} ${i.notes ? `<br><small style='color:#f57c00'>(${this.escapeHtml(i.notes)})</small>` : ''}</li>
             `).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
+                    <span>#${o.id} - ${this.escapeHtml(o.customer || 'S/N')}</span>
                     <span>${o.timestamp}</span>
                 </div>
                 <div class="ticket-body">
