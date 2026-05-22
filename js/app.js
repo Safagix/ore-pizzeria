@@ -37,6 +37,16 @@ const app = {
         'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
     },
 
+    escapeHtml: function (text) {
+        if (!text) return text;
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     hashPin: async function (pin) {
         if (!window.crypto || !window.crypto.subtle) {
             console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
@@ -414,14 +424,18 @@ const app = {
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${app.escapeHtml(m.timestamp)}</small>
+                                <span>${app.escapeHtml(m.desc)}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
                                     ${m.type === 'ingreso' ? '+' : '-'} ${m.amount.toLocaleString()}
                                 </span>
-                                <button class="btn-mov-delete" onclick="app.deleteMovement('${key}', '${m.type}', ${m.amount})">×</button>
+                                <button class="btn-mov-delete"
+                                    data-key="${app.escapeHtml(key)}"
+                                    data-type="${app.escapeHtml(m.type)}"
+                                    data-amount="${m.amount}"
+                                    onclick="app.deleteMovement(this)">×</button>
                             </div>
                         </div>
                     `;
@@ -433,7 +447,11 @@ const app = {
         });
     },
 
-    deleteMovement: function (key, type, amount) {
+    deleteMovement: function (el) {
+        const key = el.dataset.key;
+        const type = el.dataset.type;
+        const amount = parseInt(el.dataset.amount);
+
         if (!confirm("¿Eliminar este movimiento?")) return;
 
         firebase.database().ref('movements').child(key).remove((error) => {
@@ -616,7 +634,8 @@ const app = {
 
         container.innerHTML = matches.map(c => `
             <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
+                 data-name="${app.escapeHtml(c.name)}"
+                 onclick="app.selectClient(this.dataset.name)">${app.escapeHtml(c.name)}</div>
         `).join('');
         container.classList.remove('hidden');
     },
@@ -649,10 +668,14 @@ const app = {
 
         list.innerHTML = filtered.map(c => `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${app.escapeHtml(c.name)}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;"
+                        data-name="${app.escapeHtml(c.name)}"
+                        onclick="app.selectClient(this.dataset.name); app.switchTab('order')">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;"
+                        data-name="${app.escapeHtml(c.name)}"
+                        onclick="app.deleteClient(this.dataset.name)">ELIMINAR</button>
                 </div>
             </div>
         `).join('');
@@ -801,10 +824,10 @@ const app = {
                 pContainer.innerHTML = '<p style="color:#666; text-align:center;">Cargando sabores...</p>';
             } else {
                 pContainer.innerHTML = APP_STATE.products.flavors.map(f => `
-                    <div class="flavor-card" id="card-${f.id}" onclick="app.selectFlavor('${f.id}')">
-                        <div class="flavor-img" ${f.img ? `style="background-image: url('${f.img}'); background-size: cover;"` : ''}></div>
-                        <span style="font-weight: bold; color: #dac0a3;">${f.name}</span>
-                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${f.ingredients}</p>` : ''}
+                    <div class="flavor-card" id="card-${app.escapeHtml(f.id)}" data-key="${app.escapeHtml(f.id)}" onclick="app.selectFlavor(this.dataset.key)">
+                        <div class="flavor-img" ${f.img ? `style="background-image: url('${encodeURI(f.img)}'); background-size: cover;"` : ''}></div>
+                        <span style="font-weight: bold; color: #dac0a3;">${app.escapeHtml(f.name)}</span>
+                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${app.escapeHtml(f.ingredients)}</p>` : ''}
                         <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
                     </div>
                 `).join('');
@@ -815,9 +838,9 @@ const app = {
         const dContainer = document.getElementById('drinks-container');
         if (dContainer) {
             dContainer.innerHTML = APP_STATE.products.drinks.map(d => `
-                <div class="flavor-card" onclick="app.addDrink('${d.id}')">
-                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${d.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
-                    <span style="font-weight: bold; font-size: 0.9rem;">${d.name}</span>
+                <div class="flavor-card" data-key="${app.escapeHtml(d.id)}" onclick="app.addDrink(this.dataset.key)">
+                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${encodeURI(d.img)}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
+                    <span style="font-weight: bold; font-size: 0.9rem;">${app.escapeHtml(d.name)}</span>
                     <span style="color: var(--primary-gold);">Gs. ${d.price.toLocaleString()}</span>
                 </div>
             `).join('');
@@ -917,10 +940,10 @@ const app = {
             total += item.price;
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${app.escapeHtml(item.name)}</div>
+                <div class="cart-item-desc">${app.escapeHtml(item.notes) || ''}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
-                <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
+                <button class="btn-remove" data-index="${i}" onclick="app.removeFromCart(parseInt(this.dataset.index))">&times;</button>
             </div>`;
         }).join('');
         document.getElementById('cart-total').textContent = `Gs. ${total.toLocaleString()}`;
@@ -1121,16 +1144,16 @@ const app = {
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
                     ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${o.customer || 'S/N'}</div>
+                    <div class="ticket-header">#${app.escapeHtml(o.id)} - ${app.escapeHtml(o.customer) || 'S/N'}</div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
-                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : o.status)}<br>
+                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : app.escapeHtml(o.status))}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" onclick="app.markPaid('${o.key}')">COBRAR</button>` : ''}
-                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" onclick="app.editOrder('${o.key}')">EDITAR</button>` : ''}
-                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" onclick="app.cancelOrder('${o.key}')">ANULAR</button>` : ''}
+                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" data-key="${app.escapeHtml(o.key)}" onclick="app.markPaid(this.dataset.key)">COBRAR</button>` : ''}
+                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" data-key="${app.escapeHtml(o.key)}" onclick="app.editOrder(this.dataset.key)">EDITAR</button>` : ''}
+                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" data-key="${app.escapeHtml(o.key)}" onclick="app.cancelOrder(this.dataset.key)">ANULAR</button>` : ''}
                     </div>
                 </div>
             `;
@@ -1246,15 +1269,15 @@ const app = {
             const isReady = o.status === 'ready';
 
             let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
+                <li>${app.escapeHtml(i.name)} ${i.notes ? `<br><small style='color:#f57c00'>(${app.escapeHtml(i.notes)})</small>` : ''}</li>
             `).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${app.escapeHtml(o.id)} - ${app.escapeHtml(o.customer) || 'S/N'}</span>
+                    <span>${app.escapeHtml(o.timestamp)}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
@@ -1264,8 +1287,8 @@ const app = {
                 </div>
                 <div class="ticket-footer">
                     ${isReady
-                    ? `<button class="btn btn-outline" style="width:100%; border-color:#888; color:#888;" onclick="app.undoReady('${o.key}')">DESMARCAR (ERROR)</button>`
-                    : `<button class="btn btn-gold" style="width:100%" onclick="app.orderReady('${o.key}')">MARCAR LISTO</button>`
+                    ? `<button class="btn btn-outline" style="width:100%; border-color:#888; color:#888;" data-key="${app.escapeHtml(o.key)}" onclick="app.undoReady(this.dataset.key)">DESMARCAR (ERROR)</button>`
+                    : `<button class="btn btn-gold" style="width:100%" data-key="${app.escapeHtml(o.key)}" onclick="app.orderReady(this.dataset.key)">MARCAR LISTO</button>`
                 }
                 </div>
             </div>`;
