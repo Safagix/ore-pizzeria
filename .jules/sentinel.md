@@ -1,0 +1,4 @@
+## 2026-05-22 - Pervasive Stored XSS in Vanilla JS Rendering
+**Vulnerability:** Widespread Cross-Site Scripting (XSS) risks due to direct injection of user-supplied and database-sourced strings into the DOM via `innerHTML` and string-interpolated `onclick` attributes.
+**Learning:** In legacy Vanilla JavaScript applications, relying on template literals for rendering frequently leads to missing output encoding. Malicious strings in the database (e.g., customer names) can break out of HTML attributes or script contexts, leading to arbitrary code execution.
+**Prevention:** Implement a central `escapeHtml` utility and apply it to ALL dynamic data points. For event handlers, replace inline string interpolation with `data-*` attributes and `this.dataset` to safely pass values to JavaScript functions without risking attribute injection.
