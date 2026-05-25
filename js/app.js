@@ -37,6 +37,16 @@ const app = {
         'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
     },
 
+    escapeHtml: function (text) {
+        if (!text) return text;
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     hashPin: async function (pin) {
         if (!window.crypto || !window.crypto.subtle) {
             console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
@@ -414,8 +424,8 @@ const app = {
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${this.escapeHtml(m.timestamp)}</small>
+                                <span>${this.escapeHtml(m.desc)}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
@@ -616,7 +626,7 @@ const app = {
 
         container.innerHTML = matches.map(c => `
             <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
+                 onclick="app.selectClient(this.dataset.name)" data-name="${this.escapeHtml(c.name)}">${this.escapeHtml(c.name)}</div>
         `).join('');
         container.classList.remove('hidden');
     },
@@ -649,10 +659,10 @@ const app = {
 
         list.innerHTML = filtered.map(c => `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${this.escapeHtml(c.name)}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient(this.dataset.name); app.switchTab('order')" data-name="${this.escapeHtml(c.name)}">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient(this.dataset.name)" data-name="${this.escapeHtml(c.name)}">ELIMINAR</button>
                 </div>
             </div>
         `).join('');
@@ -917,8 +927,8 @@ const app = {
             total += item.price;
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${this.escapeHtml(item.name)}</div>
+                <div class="cart-item-desc">${this.escapeHtml(item.notes || '')}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
                 <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
             </div>`;
@@ -1121,10 +1131,10 @@ const app = {
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
                     ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${o.customer || 'S/N'}</div>
+                    <div class="ticket-header">#${o.id} - ${this.escapeHtml(o.customer || 'S/N')}</div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
-                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : o.status)}<br>
+                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : this.escapeHtml(o.status))}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
@@ -1246,15 +1256,15 @@ const app = {
             const isReady = o.status === 'ready';
 
             let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
+                <li>${this.escapeHtml(i.name)} ${i.notes ? `<br><small style='color:#f57c00'>(${this.escapeHtml(i.notes)})</small>` : ''}</li>
             `).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${o.id} - ${this.escapeHtml(o.customer || 'S/N')}</span>
+                    <span>${this.escapeHtml(o.timestamp)}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">

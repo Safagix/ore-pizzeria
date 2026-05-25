@@ -1,0 +1,4 @@
+## 2026-05-25 - [XSS Mitigation in Vanilla JS]
+**Vulnerability:** Systematic Stored and Reflected XSS through `innerHTML` and inline `onclick` event handlers.
+**Learning:** In Vanilla JS applications using template strings for rendering, `innerHTML` is highly dangerous. Furthermore, interpolating user data directly into inline `onclick` attributes (e.g., `onclick="fn('${data}')"`) creates injection points that are difficult to sanitize and prone to breakage if the data contains quotes.
+**Prevention:** Always use a sanitization utility like `escapeHtml` for any data rendered via `innerHTML`. For interactive elements, replace inline string interpolation in attributes with `data-*` attributes and access them via `this.dataset` in the handler function to ensure both security and functional robustness.
