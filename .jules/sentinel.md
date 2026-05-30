@@ -1,0 +1,4 @@
+## 2025-01-24 - Remaining XSS and Broken Auth in v2_secured
+**Vulnerability:** Multiple DOM injection points in `renderChef`, `renderClients`, `renderFlavors`, and `renderCart` remained unsanitized despite a previous security pass. Additionally, the 'service' role authentication hash was incorrect due to a newline character being included during the hashing process.
+**Learning:** Even after a "security hardening" phase, complex Vanilla JS applications often have shadowed injection points where user data is reused (e.g., product names, notes). Client-side hashing is prone to environment-related issues (insecure context) and manual errors (trailing newlines in `echo`).
+**Prevention:** Always use a centralized escaping utility for all dynamic DOM content. When generating hashes for authentication, use `echo -n` or dedicated scripts to avoid whitespace contamination.

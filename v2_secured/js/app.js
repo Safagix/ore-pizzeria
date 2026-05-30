@@ -109,6 +109,10 @@ const app = {
     },
 
     hashPin: async function (pin) {
+        if (!window.crypto || !window.crypto.subtle) {
+            console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
+            return null;
+        }
         const msgBuffer = new TextEncoder().encode(pin);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -381,16 +385,20 @@ const app = {
         // 1234 -> 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4
         // 0000 -> 9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0
         // admin123 -> 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
-        // 1111 -> 0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172
+        // 1111 -> 0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c
 
         const HASHES = {
             'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
             'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0', // 0000
             'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', // admin123
-            'service': '0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172' // 1111
+            'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
         };
 
         const pinHash = await this.hashPin(pin);
+
+        if (!pinHash) {
+            return alert("Error de seguridad: La autenticación requiere un contexto seguro (HTTPS o localhost).");
+        }
 
         if (pinHash !== HASHES[role]) {
             console.log("Hash mismatch:", pinHash); // Debug only
@@ -1036,15 +1044,21 @@ const app = {
 
         const filtered = APP_STATE.clients.filter(c => c.name.toLowerCase().includes(query));
 
-        list.innerHTML = filtered.map(c => `
+        list.innerHTML = filtered.map(c => {
+            const safeName = this.escapeHtml(c.name);
+            return `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${safeName}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;"
+                            data-name="${safeName}"
+                            onclick="app.selectClient(this.dataset.name); app.switchTab('order')">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;"
+                            data-name="${safeName}"
+                            onclick="app.deleteClient(this.dataset.name)">ELIMINAR</button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     },
 
     deleteClient: function (name) {
@@ -1450,9 +1464,9 @@ const app = {
             } else {
                 pContainer.innerHTML = APP_STATE.products.flavors.map(f => `
                     <div class="flavor-card" id="card-${f.id}" onclick="app.selectFlavor('${f.id}')">
-                        <div class="flavor-img" ${f.img ? `style="background-image: url('${f.img}'); background-size: cover;"` : ''}></div>
-                        <span style="font-weight: bold; color: #dac0a3;">${f.name}</span>
-                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${f.ingredients}</p>` : ''}
+                        <div class="flavor-img" ${f.img ? `style="background-image: url('${this.escapeHtml(f.img)}'); background-size: cover;"` : ''}></div>
+                        <span style="font-weight: bold; color: #dac0a3;">${this.escapeHtml(f.name)}</span>
+                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${this.escapeHtml(f.ingredients)}</p>` : ''}
                         <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
                     </div>
                 `).join('');
@@ -1464,8 +1478,8 @@ const app = {
         if (dContainer) {
             dContainer.innerHTML = APP_STATE.products.drinks.map(d => `
                 <div class="flavor-card" onclick="app.addDrink('${d.id}')">
-                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${d.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
-                    <span style="font-weight: bold; font-size: 0.9rem;">${d.name}</span>
+                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${this.escapeHtml(d.img)}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
+                    <span style="font-weight: bold; font-size: 0.9rem;">${this.escapeHtml(d.name)}</span>
                     <span style="color: var(--primary-gold);">Gs. ${d.price.toLocaleString()}</span>
                 </div>
             `).join('');
@@ -1568,8 +1582,8 @@ const app = {
             total += item.price;
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${this.escapeHtml(item.name)}</div>
+                <div class="cart-item-desc">${item.notes ? this.escapeHtml(item.notes) : ''}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
                 <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
             </div>`;
@@ -2121,16 +2135,18 @@ const app = {
             let itemsHtml = items.map(i => {
                 // Simplify text: "Pizza Mitad: X" -> "Mitad: X"
                 let displayName = i.name.replace(/Pizza Mitad:/gi, 'Mitad:');
+                const safeName = this.escapeHtml(displayName);
+                const safeNotes = i.notes ? this.escapeHtml(i.notes) : '';
 
-                return `<li>${displayName} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>`;
+                return `<li>${safeName} ${safeNotes ? `<br><small style='color:#f57c00'>(${safeNotes})</small>` : ''}</li>`;
             }).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 5px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}</span>
+                    <span>${this.escapeHtml(o.timestamp)}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
