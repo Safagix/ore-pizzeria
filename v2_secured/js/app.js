@@ -387,7 +387,7 @@ const app = {
             'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
             'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0', // 0000
             'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', // admin123
-            'service': '0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172' // 1111
+            'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
         };
 
         const pinHash = await this.hashPin(pin);
@@ -1005,7 +1005,8 @@ const app = {
 
         container.innerHTML = matches.map(c => `
             <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
+                 data-name="${this.escapeHtml(c.name)}"
+                 onclick="app.selectClient(this.dataset.name)">${this.escapeHtml(c.name)}</div>
         `).join('');
         container.classList.remove('hidden');
     },
@@ -1038,10 +1039,14 @@ const app = {
 
         list.innerHTML = filtered.map(c => `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${this.escapeHtml(c.name)}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;"
+                            data-name="${this.escapeHtml(c.name)}"
+                            onclick="app.selectClient(this.dataset.name); app.switchTab('order')">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;"
+                            data-name="${this.escapeHtml(c.name)}"
+                            onclick="app.deleteClient(this.dataset.name)">ELIMINAR</button>
                 </div>
             </div>
         `).join('');
@@ -1449,10 +1454,10 @@ const app = {
                 pContainer.innerHTML = '<p style="color:#666; text-align:center;">Cargando sabores...</p>';
             } else {
                 pContainer.innerHTML = APP_STATE.products.flavors.map(f => `
-                    <div class="flavor-card" id="card-${f.id}" onclick="app.selectFlavor('${f.id}')">
-                        <div class="flavor-img" ${f.img ? `style="background-image: url('${f.img}'); background-size: cover;"` : ''}></div>
-                        <span style="font-weight: bold; color: #dac0a3;">${f.name}</span>
-                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${f.ingredients}</p>` : ''}
+                    <div class="flavor-card" id="card-${this.escapeHtml(f.id)}" onclick="app.selectFlavor('${this.escapeHtml(f.id)}')">
+                        <div class="flavor-img" ${f.img ? `style="background-image: url('${this.escapeHtml(f.img)}'); background-size: cover;"` : ''}></div>
+                        <span style="font-weight: bold; color: #dac0a3;">${this.escapeHtml(f.name)}</span>
+                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${this.escapeHtml(f.ingredients)}</p>` : ''}
                         <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
                     </div>
                 `).join('');
@@ -1463,9 +1468,9 @@ const app = {
         const dContainer = document.getElementById('drinks-container');
         if (dContainer) {
             dContainer.innerHTML = APP_STATE.products.drinks.map(d => `
-                <div class="flavor-card" onclick="app.addDrink('${d.id}')">
-                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${d.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
-                    <span style="font-weight: bold; font-size: 0.9rem;">${d.name}</span>
+                <div class="flavor-card" onclick="app.addDrink('${this.escapeHtml(d.id)}')">
+                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${this.escapeHtml(d.img)}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
+                    <span style="font-weight: bold; font-size: 0.9rem;">${this.escapeHtml(d.name)}</span>
                     <span style="color: var(--primary-gold);">Gs. ${d.price.toLocaleString()}</span>
                 </div>
             `).join('');
@@ -1568,8 +1573,8 @@ const app = {
             total += item.price;
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${this.escapeHtml(item.name)}</div>
+                <div class="cart-item-desc">${this.escapeHtml(item.notes) || ''}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
                 <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
             </div>`;
@@ -1646,9 +1651,6 @@ const app = {
         const customerName = document.getElementById('customer-name').value;
         if (!customerName) return alert("Por favor ingresa el Nombre del Cliente");
 
-        // Fix: XSS (Vuln 3) - Sanitize Name
-        const safeCustomerName = this.escapeHtml(customerName);
-
         const orderType = document.getElementById('order-type').value;
         // Fix: Explicitly force 0 if not Delivery to avoid UI glitches
         let deliveryFee = 0;
@@ -1693,9 +1695,7 @@ const app = {
                 }
             }
             return {
-                ...item,
-                name: this.escapeHtml(item.name), // XSS
-                notes: this.escapeHtml(item.notes) // XSS
+                ...item
             };
         });
 
@@ -1708,7 +1708,7 @@ const app = {
         this.getNextId(function (seqId) {
             const newOrder = {
                 id: isEditing ? (editingOrder.status === 'ready' ? `${editingOrder.id}-B` : editingOrder.id) : seqId,
-                customer: safeCustomerName,
+                customer: customerName,
                 items: itemsToSend,
                 total: itemsToSend.reduce((sum, i) => sum + i.price, 0),
                 deliveryFee: deliveryFee,
@@ -1789,9 +1789,9 @@ const app = {
                     }
 
                     // AUTO-SAVE CLIENT
-                    const isNew = !APP_STATE.clients.some(c => c.name.toLowerCase() === safeCustomerName.toLowerCase());
-                    if (isNew && safeCustomerName.toLowerCase() !== 'ocasional') {
-                        firebase.database().ref('clients').push({ name: safeCustomerName });
+                    const isNew = !APP_STATE.clients.some(c => c.name.toLowerCase() === customerName.toLowerCase());
+                    if (isNew && customerName.toLowerCase() !== 'ocasional') {
+                        firebase.database().ref('clients').push({ name: customerName });
                     }
 
                     self.resetCart();
@@ -2122,15 +2122,15 @@ const app = {
                 // Simplify text: "Pizza Mitad: X" -> "Mitad: X"
                 let displayName = i.name.replace(/Pizza Mitad:/gi, 'Mitad:');
 
-                return `<li>${displayName} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>`;
+                return `<li>${this.escapeHtml(displayName)} ${i.notes ? `<br><small style='color:#f57c00'>(${this.escapeHtml(i.notes)})</small>` : ''}</li>`;
             }).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 5px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}</span>
+                    <span>${this.escapeHtml(o.timestamp)}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
