@@ -736,7 +736,7 @@ const app = {
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
                                     ${m.type === 'ingreso' ? '+' : '-'} ${m.amount.toLocaleString()}
                                 </span>
-                                <button class="btn-mov-delete" onclick="app.deleteMovement('${key}', '${m.type}', ${m.amount})">×</button>
+                                <button class="btn-mov-delete" data-key="${this.escapeHtml(key)}" data-type="${this.escapeHtml(m.type)}" data-amount="${m.amount}" onclick="app.deleteMovement(this.dataset.key, this.dataset.type, parseFloat(this.dataset.amount))">×</button>
                             </div>
                         </div>
                     `;
@@ -1003,10 +1003,13 @@ const app = {
             return;
         }
 
-        container.innerHTML = matches.map(c => `
-            <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
-        `).join('');
+        container.innerHTML = matches.map(c => {
+            const safeName = this.escapeHtml(c.name);
+            return `
+                <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;"
+                     data-name="${safeName}" onclick="app.selectClient(this.dataset.name)">${safeName}</div>
+            `;
+        }).join('');
         container.classList.remove('hidden');
     },
 
@@ -1036,15 +1039,18 @@ const app = {
 
         const filtered = APP_STATE.clients.filter(c => c.name.toLowerCase().includes(query));
 
-        list.innerHTML = filtered.map(c => `
-            <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+        list.innerHTML = filtered.map(c => {
+            const safeName = this.escapeHtml(c.name);
+            return `
+                <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
+                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${safeName}</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" data-name="${safeName}" onclick="app.selectClient(this.dataset.name); app.switchTab('order')">SELECCIONAR</button>
+                        <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" data-name="${safeName}" onclick="app.deleteClient(this.dataset.name)">ELIMINAR</button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     deleteClient: function (name) {
@@ -1448,27 +1454,38 @@ const app = {
             if (APP_STATE.products.flavors.length === 0) {
                 pContainer.innerHTML = '<p style="color:#666; text-align:center;">Cargando sabores...</p>';
             } else {
-                pContainer.innerHTML = APP_STATE.products.flavors.map(f => `
-                    <div class="flavor-card" id="card-${f.id}" onclick="app.selectFlavor('${f.id}')">
-                        <div class="flavor-img" ${f.img ? `style="background-image: url('${f.img}'); background-size: cover;"` : ''}></div>
-                        <span style="font-weight: bold; color: #dac0a3;">${f.name}</span>
-                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${f.ingredients}</p>` : ''}
-                        <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
-                    </div>
-                `).join('');
+                pContainer.innerHTML = APP_STATE.products.flavors.map(f => {
+                    const safeId = this.escapeHtml(f.id);
+                    const safeName = this.escapeHtml(f.name);
+                    const safeIngredients = this.escapeHtml(f.ingredients);
+                    const safeImg = this.escapeHtml(f.img);
+                    return `
+                        <div class="flavor-card" id="card-${safeId}" data-id="${safeId}" onclick="app.selectFlavor(this.dataset.id)">
+                            <div class="flavor-img" ${safeImg ? `style="background-image: url('${safeImg}'); background-size: cover;"` : ''}></div>
+                            <span style="font-weight: bold; color: #dac0a3;">${safeName}</span>
+                            ${safeIngredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${safeIngredients}</p>` : ''}
+                            <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
+                        </div>
+                    `;
+                }).join('');
             }
         }
 
         // Drinks
         const dContainer = document.getElementById('drinks-container');
         if (dContainer) {
-            dContainer.innerHTML = APP_STATE.products.drinks.map(d => `
-                <div class="flavor-card" onclick="app.addDrink('${d.id}')">
-                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${d.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
-                    <span style="font-weight: bold; font-size: 0.9rem;">${d.name}</span>
-                    <span style="color: var(--primary-gold);">Gs. ${d.price.toLocaleString()}</span>
-                </div>
-            `).join('');
+            dContainer.innerHTML = APP_STATE.products.drinks.map(d => {
+                const safeId = this.escapeHtml(d.id);
+                const safeName = this.escapeHtml(d.name);
+                const safeImg = this.escapeHtml(d.img);
+                return `
+                    <div class="flavor-card" data-id="${safeId}" onclick="app.addDrink(this.dataset.id)">
+                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${safeImg ? `background-image: url('${safeImg}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${safeImg ? '' : '🥤'}</div>
+                        <span style="font-weight: bold; font-size: 0.9rem;">${safeName}</span>
+                        <span style="color: var(--primary-gold);">Gs. ${d.price.toLocaleString()}</span>
+                    </div>
+                `;
+            }).join('');
         }
     },
 
@@ -1566,10 +1583,12 @@ const app = {
         let total = 0;
         c.innerHTML = APP_STATE.cart.map((item, i) => {
             total += item.price;
+            const safeName = this.escapeHtml(item.name);
+            const safeNotes = this.escapeHtml(item.notes);
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${safeName}</div>
+                <div class="cart-item-desc">${safeNotes || ''}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
                 <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
             </div>`;
@@ -1884,9 +1903,9 @@ const app = {
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" onclick="app.markPaid('${o.key}')">💰 COBRAR</button>` : ''}
-                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" onclick="app.editOrder('${o.key}')">EDITAR</button>` : ''}
-                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" onclick="app.cancelOrder('${o.key}')">ANULAR</button>` : ''}
+                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" data-key="${this.escapeHtml(o.key)}" onclick="app.markPaid(this.dataset.key)">💰 COBRAR</button>` : ''}
+                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" data-key="${this.escapeHtml(o.key)}" onclick="app.editOrder(this.dataset.key)">EDITAR</button>` : ''}
+                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" data-key="${this.escapeHtml(o.key)}" onclick="app.cancelOrder(this.dataset.key)">ANULAR</button>` : ''}
                     </div>
                 </div>
             `;
@@ -2122,15 +2141,19 @@ const app = {
                 // Simplify text: "Pizza Mitad: X" -> "Mitad: X"
                 let displayName = i.name.replace(/Pizza Mitad:/gi, 'Mitad:');
 
-                return `<li>${displayName} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>`;
+                return `<li>${this.escapeHtml(displayName)} ${i.notes ? `<br><small style='color:#f57c00'>(${this.escapeHtml(i.notes)})</small>` : ''}</li>`;
             }).join('');
+
+            const safeId = this.escapeHtml(o.id);
+            const safeCustomer = this.escapeHtml(o.customer);
+            const safeTime = this.escapeHtml(o.timestamp);
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 5px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${safeId} - ${safeCustomer || 'S/N'}</span>
+                    <span>${safeTime}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
@@ -2140,8 +2163,8 @@ const app = {
                 </div>
                 <div class="ticket-footer">
                     ${isReady
-                    ? `<button class="btn btn-outline" style="width:100%; border-color:#888; color:#888;" onclick="app.undoReady('${o.key}')">DESMARCAR (ERROR)</button>`
-                    : `<button class="btn btn-gold" style="width:100%" onclick="app.orderReady('${o.key}')">MARCAR LISTO</button>`
+                    ? `<button class="btn btn-outline" style="width:100%; border-color:#888; color:#888;" data-key="${this.escapeHtml(o.key)}" onclick="app.undoReady(this.dataset.key)">DESMARCAR (ERROR)</button>`
+                    : `<button class="btn btn-gold" style="width:100%" data-key="${this.escapeHtml(o.key)}" onclick="app.orderReady(this.dataset.key)">MARCAR LISTO</button>`
                 }
                 </div>
             </div>`;
