@@ -109,6 +109,10 @@ const app = {
     },
 
     hashPin: async function (pin) {
+        if (!window.crypto || !window.crypto.subtle) {
+            console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
+            return null;
+        }
         const msgBuffer = new TextEncoder().encode(pin);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -723,8 +727,8 @@ const app = {
                     else totalOut += m.amount;
 
                     // Fix: XSS (Vuln 3)
-                    const safeDesc = this.escapeHtml(m.desc);
-                    const safeTime = this.escapeHtml(m.timestamp);
+                    const safeDesc = app.escapeHtml(m.desc);
+                    const safeTime = app.escapeHtml(m.timestamp);
 
                     html += `
                         <div class="dash-mov-item">
@@ -1005,7 +1009,7 @@ const app = {
 
         container.innerHTML = matches.map(c => `
             <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
+                 data-name="${app.escapeHtml(c.name)}" onclick="app.selectClient(this.dataset.name)">${app.escapeHtml(c.name)}</div>
         `).join('');
         container.classList.remove('hidden');
     },
@@ -1038,10 +1042,10 @@ const app = {
 
         list.innerHTML = filtered.map(c => `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${app.escapeHtml(c.name)}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" data-name="${app.escapeHtml(c.name)}" onclick="app.selectClient(this.dataset.name); app.switchTab('order')">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" data-name="${app.escapeHtml(c.name)}" onclick="app.deleteClient(this.dataset.name)">ELIMINAR</button>
                 </div>
             </div>
         `).join('');
@@ -1449,10 +1453,10 @@ const app = {
                 pContainer.innerHTML = '<p style="color:#666; text-align:center;">Cargando sabores...</p>';
             } else {
                 pContainer.innerHTML = APP_STATE.products.flavors.map(f => `
-                    <div class="flavor-card" id="card-${f.id}" onclick="app.selectFlavor('${f.id}')">
-                        <div class="flavor-img" ${f.img ? `style="background-image: url('${f.img}'); background-size: cover;"` : ''}></div>
-                        <span style="font-weight: bold; color: #dac0a3;">${f.name}</span>
-                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${f.ingredients}</p>` : ''}
+                    <div class="flavor-card" id="card-${app.escapeHtml(f.id)}" data-id="${app.escapeHtml(f.id)}" onclick="app.selectFlavor(this.dataset.id)">
+                        <div class="flavor-img" ${f.img ? `style="background-image: url('${app.escapeHtml(f.img)}'); background-size: cover;"` : ''}></div>
+                        <span style="font-weight: bold; color: #dac0a3;">${app.escapeHtml(f.name)}</span>
+                        ${f.ingredients ? `<p style="color: #bbb; font-size: 0.65rem; margin: 4px 0; line-height: 1.2;">${app.escapeHtml(f.ingredients)}</p>` : ''}
                         <span style="display:block; margin-top:5px; color: var(--primary-gold); font-size: 0.9rem;">Gs. ${(parseInt(f.price) || 0).toLocaleString('es-PY')}</span>
                     </div>
                 `).join('');
@@ -1463,9 +1467,9 @@ const app = {
         const dContainer = document.getElementById('drinks-container');
         if (dContainer) {
             dContainer.innerHTML = APP_STATE.products.drinks.map(d => `
-                <div class="flavor-card" onclick="app.addDrink('${d.id}')">
-                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${d.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
-                    <span style="font-weight: bold; font-size: 0.9rem;">${d.name}</span>
+                <div class="flavor-card" data-id="${app.escapeHtml(d.id)}" onclick="app.addDrink(this.dataset.id)">
+                        <div class="flavor-img" style="border-radius:0; background:none; font-size:2rem; ${d.img ? `background-image: url('${app.escapeHtml(d.img)}'); background-size: contain; background-repeat: no-repeat; background-position: center; border:none;` : ''}">${d.img ? '' : '🥤'}</div>
+                    <span style="font-weight: bold; font-size: 0.9rem;">${app.escapeHtml(d.name)}</span>
                     <span style="color: var(--primary-gold);">Gs. ${d.price.toLocaleString()}</span>
                 </div>
             `).join('');
@@ -1568,8 +1572,8 @@ const app = {
             total += item.price;
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${app.escapeHtml(item.name)}</div>
+                <div class="cart-item-desc">${app.escapeHtml(item.notes) || ''}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
                 <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
             </div>`;
@@ -1647,7 +1651,7 @@ const app = {
         if (!customerName) return alert("Por favor ingresa el Nombre del Cliente");
 
         // Fix: XSS (Vuln 3) - Sanitize Name
-        const safeCustomerName = this.escapeHtml(customerName);
+        const safeCustomerName = app.escapeHtml(customerName);
 
         const orderType = document.getElementById('order-type').value;
         // Fix: Explicitly force 0 if not Delivery to avoid UI glitches
@@ -1694,8 +1698,8 @@ const app = {
             }
             return {
                 ...item,
-                name: this.escapeHtml(item.name), // XSS
-                notes: this.escapeHtml(item.notes) // XSS
+                name: app.escapeHtml(item.name), // XSS
+                notes: app.escapeHtml(item.notes) // XSS
             };
         });
 
@@ -1875,12 +1879,12 @@ const app = {
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; overflow: visible;">
                     <div class="ticket-header" style="position: relative;">
-                        #${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}
+                        #${o.id} - ${app.escapeHtml(o.customer) || 'S/N'}
                         ${isPending ? '<span style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: linear-gradient(135deg, #ff9800, #f57c00); color: white; font-size: 0.65rem; padding: 3px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">⚠️ PENDIENTE</span>' : ''}
                     </div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
-                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : this.escapeHtml(o.status))}<br>
+                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : app.escapeHtml(o.status))}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
@@ -2122,14 +2126,14 @@ const app = {
                 // Simplify text: "Pizza Mitad: X" -> "Mitad: X"
                 let displayName = i.name.replace(/Pizza Mitad:/gi, 'Mitad:');
 
-                return `<li>${displayName} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>`;
+                return `<li>${app.escapeHtml(displayName)} ${i.notes ? `<br><small style='color:#f57c00'>(${app.escapeHtml(i.notes)})</small>` : ''}</li>`;
             }).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 5px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
+                    <span>#${o.id} - ${app.escapeHtml(o.customer) || 'S/N'}</span>
                     <span>${o.timestamp}</span>
                 </div>
                 <div class="ticket-body">
