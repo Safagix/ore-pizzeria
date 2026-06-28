@@ -393,7 +393,6 @@ const app = {
         const pinHash = await this.hashPin(pin);
 
         if (pinHash !== HASHES[role]) {
-            console.log("Hash mismatch:", pinHash); // Debug only
             return alert("PIN Incorrecto");
         }
 
@@ -1003,14 +1002,18 @@ const app = {
             return;
         }
 
-        container.innerHTML = matches.map(c => `
-            <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
-        `).join('');
+        container.innerHTML = matches.map(c => {
+            const safeName = this.escapeHtml(c.name);
+            return `
+                <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;"
+                     data-name="${safeName}" onclick="app.selectClient(this.dataset.name)">${safeName}</div>
+            `;
+        }).join('');
         container.classList.remove('hidden');
     },
 
     selectClient: function (name) {
+        if (!name) return;
         document.getElementById('customer-name').value = name;
         document.getElementById('client-suggestions').classList.add('hidden');
     },
@@ -1036,19 +1039,24 @@ const app = {
 
         const filtered = APP_STATE.clients.filter(c => c.name.toLowerCase().includes(query));
 
-        list.innerHTML = filtered.map(c => `
-            <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+        list.innerHTML = filtered.map(c => {
+            const safeName = this.escapeHtml(c.name);
+            return `
+                <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
+                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${safeName}</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;"
+                                data-name="${safeName}" onclick="app.selectClient(this.dataset.name); app.switchTab('order')">SELECCIONAR</button>
+                        <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;"
+                                data-name="${safeName}" onclick="app.deleteClient(this.dataset.name)">ELIMINAR</button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     deleteClient: function (name) {
-        if (!confirm(`¿Eliminar a ${name}?`)) return;
+        if (!name || !confirm(`¿Eliminar a ${name}?`)) return;
         // In this implementation names are unique enough or we could find key
         firebase.database().ref('clients').orderByChild('name').equalTo(name).once('value', snap => {
             snap.forEach(child => child.ref.remove());
