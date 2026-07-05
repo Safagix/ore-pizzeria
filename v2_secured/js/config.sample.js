@@ -1,11 +1,11 @@
 const CONFIG = {
     firebase: {
-        apiKey: "YOUR_API_KEY_HERE",
-        authDomain: "your-app.firebaseapp.com",
-        databaseURL: "https://your-app-default-rtdb.firebaseio.com/",
-        projectId: "your-project-id",
-        storageBucket: "your-app.firebasestorage.app",
-        messagingSenderId: "1234567890",
-        appId: "1:1234567890:web:abcdef123456"
+        apiKey: "YOUR_API_KEY",
+        authDomain: "your-project.firebaseapp.com",
+        databaseURL: "https://your-project-default-rtdb.firebaseio.com/",
+        projectId: "your-project",
+        storageBucket: "your-project.firebasestorage.app",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
     }
 };
