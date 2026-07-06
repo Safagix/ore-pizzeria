@@ -1,0 +1,4 @@
+## 2025-05-15 - [Securing Configurations and Correcting Authentication]
+**Vulnerability:** Hardcoded Firebase credentials in template files and sensitive configuration files tracked in version control. Incorrect authentication hash for 'service' role in the secured version.
+**Learning:** Root-level `.gitignore` rules (e.g., `js/config.js`) do not automatically prevent tracking of identically named files in subdirectories if they were already committed. The 'service' role hash mismatch likely occurred due to inconsistent manual hashing (e.g., including a newline).
+**Prevention:** Use recursive patterns in `.gitignore` (e.g., `**/js/config.js`). Always verify template files for placeholder values before committing. Standardize the hashing process for authentication roles across all application versions.
