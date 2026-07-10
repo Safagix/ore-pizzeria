@@ -378,16 +378,17 @@ const app = {
         if (!pin) return alert("Ingresa el PIN");
 
         // Fix: Hashed Credentials (Vuln 1)
+        // Using SHA-256 hashes for PIN verification to prevent plaintext credentials in source.
         // 1234 -> 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4
         // 0000 -> 9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0
         // admin123 -> 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
-        // 1111 -> 0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172
+        // 1111 -> 0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c
 
         const HASHES = {
             'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
             'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0', // 0000
             'admin': '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', // admin123
-            'service': '0ffe1abd1a08215353c233d6e009613eb95eab46e11d16a63450d90946521172' // 1111
+            'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
         };
 
         const pinHash = await this.hashPin(pin);
