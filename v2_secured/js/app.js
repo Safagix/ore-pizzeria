@@ -393,7 +393,6 @@ const app = {
         const pinHash = await this.hashPin(pin);
 
         if (pinHash !== HASHES[role]) {
-            console.log("Hash mismatch:", pinHash); // Debug only
             return alert("PIN Incorrecto");
         }
 
