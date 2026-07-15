@@ -1,0 +1,4 @@
+## 2026-07-15 - [Sub-directory Config Exposure & Hash Mismatches]
+**Vulnerability:** Sensitive configuration files in subdirectories (like `v2_secured/js/config.js`) were being tracked by Git despite a root-level `.gitignore` rule for `js/config.js`. Additionally, the 'service' role hash was incorrect due to environment-specific character handling during pre-calculation.
+**Learning:** Git ignore rules for specific paths do not automatically apply to identically named files in subdirectories unless the `**/` pattern is used. Also, hash mismatches sharing a prefix can occur due to trailing newlines or encoding differences when manually hashing strings.
+**Prevention:** Use recursive patterns in `.gitignore` (e.g., `**/js/config.js`) and always verify pre-calculated hashes against the application's runtime `TextEncoder` behavior.
