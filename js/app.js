@@ -37,6 +37,16 @@ const app = {
         'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
     },
 
+    escapeHtml: function (text) {
+        if (text === null || text === undefined) return '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     hashPin: async function (pin) {
         if (!window.crypto || !window.crypto.subtle) {
             console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
@@ -414,14 +424,14 @@ const app = {
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${this.escapeHtml(m.timestamp)}</small>
+                                <span>${this.escapeHtml(m.desc)}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
                                     ${m.type === 'ingreso' ? '+' : '-'} ${m.amount.toLocaleString()}
                                 </span>
-                                <button class="btn-mov-delete" onclick="app.deleteMovement('${key}', '${m.type}', ${m.amount})">×</button>
+                                <button class="btn-mov-delete" onclick="app.deleteMovement('${this.escapeHtml(key)}', '${this.escapeHtml(m.type)}', ${m.amount})">×</button>
                             </div>
                         </div>
                     `;
@@ -1121,16 +1131,16 @@ const app = {
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
                     ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${o.customer || 'S/N'}</div>
+                    <div class="ticket-header">#${this.escapeHtml(o.id)} - ${this.escapeHtml(o.customer) || 'S/N'}</div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
-                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : o.status)}<br>
+                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : this.escapeHtml(o.status))}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" onclick="app.markPaid('${o.key}')">COBRAR</button>` : ''}
-                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" onclick="app.editOrder('${o.key}')">EDITAR</button>` : ''}
-                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" onclick="app.cancelOrder('${o.key}')">ANULAR</button>` : ''}
+                        ${o.payStatus === 'pending' ? `<button class="btn btn-gold" style="flex:1; min-width: 80px;" onclick="app.markPaid('${this.escapeHtml(o.key)}')">COBRAR</button>` : ''}
+                        ${canEdit ? `<button class="btn" style="flex:1; min-width: 80px; background: #2196f3; color: white;" onclick="app.editOrder('${this.escapeHtml(o.key)}')">EDITAR</button>` : ''}
+                        ${canCancel ? `<button class="btn" style="flex:1; min-width: 80px; background: #d32f2f; color: white;" onclick="app.cancelOrder('${this.escapeHtml(o.key)}')">ANULAR</button>` : ''}
                     </div>
                 </div>
             `;
