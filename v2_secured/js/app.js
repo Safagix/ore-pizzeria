@@ -109,6 +109,10 @@ const app = {
     },
 
     hashPin: async function (pin) {
+        if (!window.crypto || !window.crypto.subtle) {
+            console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
+            return null;
+        }
         const msgBuffer = new TextEncoder().encode(pin);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -391,6 +395,10 @@ const app = {
         };
 
         const pinHash = await this.hashPin(pin);
+
+        if (pinHash === null) {
+            return alert("Error: La API de criptografía (Web Crypto API) no está disponible en este navegador o entorno. Por favor, asegúrate de acceder mediante una conexión segura (HTTPS) o desde localhost.");
+        }
 
         if (pinHash !== HASHES[role]) {
             console.log("Hash mismatch:", pinHash); // Debug only
