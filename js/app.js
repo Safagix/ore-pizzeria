@@ -37,6 +37,16 @@ const app = {
         'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
     },
 
+    escapeHtml: function (text) {
+        if (!text) return '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     hashPin: async function (pin) {
         if (!window.crypto || !window.crypto.subtle) {
             console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
@@ -411,11 +421,14 @@ const app = {
                     if (m.type === 'ingreso') totalIn += m.amount;
                     else totalOut += m.amount;
 
+                    const safeDesc = app.escapeHtml(m.desc);
+                    const safeTime = app.escapeHtml(m.timestamp);
+
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${safeTime}</small>
+                                <span>${safeDesc}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
@@ -1118,10 +1131,11 @@ const app = {
             const canCancel = o.status === 'cooking';
             const canEdit = o.payStatus === 'pending';
 
+            const safeCustomer = app.escapeHtml(o.customer);
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
                     ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${o.customer || 'S/N'}</div>
+                    <div class="ticket-header">#${o.id} - ${safeCustomer || 'S/N'}</div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
                         Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : o.status)}<br>
