@@ -1,5 +1,7 @@
 # Secrets
 js/config.js
+v2_secured/js/config.js
+**/js/config.js
 .env
 .DS_Store
 
