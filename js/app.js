@@ -37,6 +37,17 @@ const app = {
         'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
     },
 
+    // --- SECURITY & UTILS ---
+    escapeHtml: function (text) {
+        if (!text) return text;
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     hashPin: async function (pin) {
         if (!window.crypto || !window.crypto.subtle) {
             console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
@@ -1246,15 +1257,15 @@ const app = {
             const isReady = o.status === 'ready';
 
             let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
+                <li>${app.escapeHtml(i.name)} ${i.notes ? `<br><small style='color:#f57c00'>(${app.escapeHtml(i.notes)})</small>` : ''}</li>
             `).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${app.escapeHtml(o.id)} - ${app.escapeHtml(o.customer) || 'S/N'}</span>
+                    <span>${app.escapeHtml(o.timestamp)}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
