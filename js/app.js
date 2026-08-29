@@ -37,6 +37,16 @@ const app = {
         'service': '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c' // 1111
     },
 
+    escapeHtml: function (text) {
+        if (text === null || text === undefined) return '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     hashPin: async function (pin) {
         if (!window.crypto || !window.crypto.subtle) {
             console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
@@ -411,11 +421,13 @@ const app = {
                     if (m.type === 'ingreso') totalIn += m.amount;
                     else totalOut += m.amount;
 
+                    const safeDesc = app.escapeHtml(m.desc);
+                    const safeTime = app.escapeHtml(m.timestamp);
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${safeTime}</small>
+                                <span>${safeDesc}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
@@ -616,7 +628,7 @@ const app = {
 
         container.innerHTML = matches.map(c => `
             <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
+                 onclick="app.selectClient('${c.name.replace(/'/g, "\\'")}')">${app.escapeHtml(c.name)}</div>
         `).join('');
         container.classList.remove('hidden');
     },
@@ -647,15 +659,18 @@ const app = {
 
         const filtered = APP_STATE.clients.filter(c => c.name.toLowerCase().includes(query));
 
-        list.innerHTML = filtered.map(c => `
+        list.innerHTML = filtered.map(c => {
+            const safeName = app.escapeHtml(c.name);
+            const jsParamName = c.name.replace(/'/g, "\\'");
+            return `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${safeName}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${jsParamName}'); app.switchTab('order')">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${jsParamName}')">ELIMINAR</button>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     },
 
     deleteClient: function (name) {
@@ -1246,15 +1261,15 @@ const app = {
             const isReady = o.status === 'ready';
 
             let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
+                <li>${app.escapeHtml(i.name)} ${i.notes ? `<br><small style='color:#f57c00'>(${app.escapeHtml(i.notes)})</small>` : ''}</li>
             `).join('');
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${o.id} - ${app.escapeHtml(o.customer) || 'S/N'}</span>
+                    <span>${app.escapeHtml(o.timestamp)}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
