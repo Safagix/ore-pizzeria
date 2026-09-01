@@ -30,6 +30,16 @@ const APP_STATE = {
 };
 
 const app = {
+    escapeHtml: function (text) {
+        if (!text) return text === 0 ? '0' : '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     _AUTH_HASHES: {
         'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
         'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0',    // 0000
@@ -411,11 +421,13 @@ const app = {
                     if (m.type === 'ingreso') totalIn += m.amount;
                     else totalOut += m.amount;
 
+                    const safeDesc = app.escapeHtml(m.desc);
+                    const safeTimestamp = app.escapeHtml(m.timestamp);
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${safeTimestamp}</small>
+                                <span>${safeDesc}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
@@ -614,10 +626,12 @@ const app = {
             return;
         }
 
-        container.innerHTML = matches.map(c => `
-            <div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;" 
-                 onclick="app.selectClient('${c.name}')">${c.name}</div>
-        `).join('');
+        container.innerHTML = matches.map(c => {
+            const safeName = app.escapeHtml(c.name);
+            const encName = encodeURIComponent(c.name);
+            return `<div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #333;"
+                 onclick="app.selectClient(decodeURIComponent('${encName}'))">${safeName}</div>`;
+        }).join('');
         container.classList.remove('hidden');
     },
 
@@ -647,15 +661,19 @@ const app = {
 
         const filtered = APP_STATE.clients.filter(c => c.name.toLowerCase().includes(query));
 
-        list.innerHTML = filtered.map(c => `
+        list.innerHTML = filtered.map(c => {
+            const safeName = app.escapeHtml(c.name);
+            const encName = encodeURIComponent(c.name);
+            return `
             <div class="stats-card" style="padding: 15px; border-left: 4px solid var(--primary-gold);">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${c.name}</div>
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">${safeName}</div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient('${c.name}'); app.switchTab('order')">SELECCIONAR</button>
-                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient('${c.name}')">ELIMINAR</button>
+                    <button class="btn btn-gold" style="padding: 5px 10px; font-size: 0.8rem;" onclick="app.selectClient(decodeURIComponent('${encName}')); app.switchTab('order')">SELECCIONAR</button>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: #333;" onclick="app.deleteClient(decodeURIComponent('${encName}'))">ELIMINAR</button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     },
 
     deleteClient: function (name) {
@@ -917,8 +935,8 @@ const app = {
             total += item.price;
             return `
             <div class="cart-item">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-desc">${item.notes || ''}</div>
+                <div class="cart-item-title">${app.escapeHtml(item.name)}</div>
+                <div class="cart-item-desc">${app.escapeHtml(item.notes) || ''}</div>
                 <div style="text-align: right; color: #fff;">Gs. ${item.price.toLocaleString()}</div>
                 <button class="btn-remove" onclick="app.removeFromCart(${i})">&times;</button>
             </div>`;
@@ -1118,13 +1136,15 @@ const app = {
             const canCancel = o.status === 'cooking';
             const canEdit = o.payStatus === 'pending';
 
+            const safeCustomer = app.escapeHtml(o.customer);
+            const safeStatus = app.escapeHtml(o.status);
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; position: relative;">
                     ${o.payStatus === 'pending' ? '<div style="position: absolute; top: -10px; right: -10px; background: var(--pending); color: black; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">PENDIENTE</div>' : ''}
-                    <div class="ticket-header">#${o.id} - ${o.customer || 'S/N'}</div>
+                    <div class="ticket-header">#${o.id} - ${safeCustomer || 'S/N'}</div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
-                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : o.status)}<br>
+                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : safeStatus)}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
@@ -1246,15 +1266,18 @@ const app = {
             const isReady = o.status === 'ready';
 
             let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
+                <li>${app.escapeHtml(i.name)} ${i.notes ? `<br><small style='color:#f57c00'>(${app.escapeHtml(i.notes)})</small>` : ''}</li>
             `).join('');
+
+            const safeCustomer = app.escapeHtml(o.customer);
+            const safeTimestamp = app.escapeHtml(o.timestamp);
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${o.id} - ${safeCustomer || 'S/N'}</span>
+                    <span>${safeTimestamp}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
