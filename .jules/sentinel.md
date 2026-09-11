@@ -1,0 +1,4 @@
+## 2026-03-31 - Git Tracking of Sensitive Config Files in Subdirectories
+**Vulnerability:** A sensitive configuration file containing real Firebase API keys (`v2_secured/js/config.js`) was tracked by Git despite root `.gitignore` rules aiming to ignore configuration files.
+**Learning:** Root `.gitignore` rules like `js/config.js` only match the specific path `js/config.js` relative to the root directory, allowing nested subdirectories (such as `v2_secured/js/config.js`) to bypass gitignore protection and be accidentally committed. Furthermore, `git rm --cached` removes the file from git tracking without deleting the untracked file on disk.
+**Prevention:** Always use recursive wildcards (`**/js/config.js`) in `.gitignore` for configuration patterns, and periodically audit untracked/tracked files using `git ls-files` across all subdirectories.
