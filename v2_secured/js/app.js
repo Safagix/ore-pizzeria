@@ -1023,10 +1023,14 @@ const app = {
     addClient: function () {
         const name = prompt("Nombre del nuevo cliente:");
         if (!name || name.trim() === '') return;
+        const trimmedName = name.trim();
+        if (trimmedName.length > 50) {
+            return alert("El nombre del cliente no puede exceder los 50 caracteres.");
+        }
 
-        firebase.database().ref('clients').push({ name: name.trim() });
-        document.getElementById('customer-name').value = name.trim();
-        alert("Cliente agregado: " + name.trim());
+        firebase.database().ref('clients').push({ name: trimmedName });
+        document.getElementById('customer-name').value = trimmedName;
+        alert("Cliente agregado: " + trimmedName);
         this.renderClients();
     },
 
@@ -1645,9 +1649,12 @@ const app = {
 
         const customerName = document.getElementById('customer-name').value;
         if (!customerName) return alert("Por favor ingresa el Nombre del Cliente");
+        if (customerName.trim().length > 50) {
+            return alert("El nombre del cliente no puede exceder los 50 caracteres.");
+        }
 
         // Fix: XSS (Vuln 3) - Sanitize Name
-        const safeCustomerName = this.escapeHtml(customerName);
+        const safeCustomerName = this.escapeHtml(customerName.trim());
 
         const orderType = document.getElementById('order-type').value;
         // Fix: Explicitly force 0 if not Delivery to avoid UI glitches
