@@ -1,7 +1,8 @@
 # Secrets
-js/config.js
+**/js/config.js
 .env
 .DS_Store
+*.log
 
 # Dependencies
 node_modules/
