@@ -723,8 +723,8 @@ const app = {
                     else totalOut += m.amount;
 
                     // Fix: XSS (Vuln 3)
-                    const safeDesc = this.escapeHtml(m.desc);
-                    const safeTime = this.escapeHtml(m.timestamp);
+                    const safeDesc = app.escapeHtml(m.desc);
+                    const safeTime = app.escapeHtml(m.timestamp);
 
                     html += `
                         <div class="dash-mov-item">
@@ -1647,7 +1647,7 @@ const app = {
         if (!customerName) return alert("Por favor ingresa el Nombre del Cliente");
 
         // Fix: XSS (Vuln 3) - Sanitize Name
-        const safeCustomerName = this.escapeHtml(customerName);
+        const safeCustomerName = app.escapeHtml(customerName);
 
         const orderType = document.getElementById('order-type').value;
         // Fix: Explicitly force 0 if not Delivery to avoid UI glitches
@@ -1694,8 +1694,8 @@ const app = {
             }
             return {
                 ...item,
-                name: this.escapeHtml(item.name), // XSS
-                notes: this.escapeHtml(item.notes) // XSS
+                name: app.escapeHtml(item.name), // XSS
+                notes: app.escapeHtml(item.notes) // XSS
             };
         });
 
@@ -1875,12 +1875,12 @@ const app = {
             list.innerHTML += `
                 <div class="ticket" style="width: 280px; border-color: ${o.payStatus === 'paid' ? 'var(--success)' : 'var(--pending)'}; overflow: visible;">
                     <div class="ticket-header" style="position: relative;">
-                        #${o.id} - ${this.escapeHtml(o.customer) || 'S/N'}
+                        #${o.id} - ${app.escapeHtml(o.customer) || 'S/N'}
                         ${isPending ? '<span style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: linear-gradient(135deg, #ff9800, #f57c00); color: white; font-size: 0.65rem; padding: 3px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">⚠️ PENDIENTE</span>' : ''}
                     </div>
                     <div class="ticket-body">
                         Total: Gs. ${(o.total || 0).toLocaleString()}${o.deliveryFee ? ` (+Gs. ${o.deliveryFee.toLocaleString()} Delivery)` : ''}<br>
-                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : this.escapeHtml(o.status))}<br>
+                        Estado: ${o.status === 'cooking' ? 'COCINANDO' : (o.status === 'ready' ? 'LISTO' : app.escapeHtml(o.status))}<br>
                         Pago: <b>${o.payStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}</b>
                     </div>
                     <div class="ticket-footer" style="display: flex; gap: 5px; flex-wrap: wrap;">
