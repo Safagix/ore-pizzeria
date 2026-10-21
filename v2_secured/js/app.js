@@ -109,6 +109,10 @@ const app = {
     },
 
     hashPin: async function (pin) {
+        if (!window.crypto || !window.crypto.subtle) {
+            console.warn("Web Crypto API not available. Check if you are in a secure context (HTTPS/localhost).");
+            return null;
+        }
         const msgBuffer = new TextEncoder().encode(pin);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -392,8 +396,11 @@ const app = {
 
         const pinHash = await this.hashPin(pin);
 
+        if (!pinHash) {
+            return alert("Error de seguridad: La autenticación requiere un contexto seguro (HTTPS o localhost).");
+        }
+
         if (pinHash !== HASHES[role]) {
-            console.log("Hash mismatch:", pinHash); // Debug only
             return alert("PIN Incorrecto");
         }
 
