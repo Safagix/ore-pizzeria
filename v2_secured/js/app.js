@@ -2129,7 +2129,7 @@ const app = {
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 5px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
+                    <span>#${o.id} - ${app.escapeHtml(o.customer) || 'S/N'}</span>
                     <span>${o.timestamp}</span>
                 </div>
                 <div class="ticket-body">
