@@ -30,6 +30,17 @@ const APP_STATE = {
 };
 
 const app = {
+    // --- SECURITY & UTILS ---
+    escapeHtml: function (text) {
+        if (!text) return text;
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     _AUTH_HASHES: {
         'cashier': '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // 1234
         'chef': '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0',    // 0000
@@ -411,11 +422,14 @@ const app = {
                     if (m.type === 'ingreso') totalIn += m.amount;
                     else totalOut += m.amount;
 
+                    const safeDesc = app.escapeHtml(m.desc);
+                    const safeTime = app.escapeHtml(m.timestamp);
+
                     html += `
                         <div class="dash-mov-item">
                             <div style="flex:1">
-                                <small style="display:block; color:#666">${m.timestamp}</small>
-                                <span>${m.desc}</span>
+                                <small style="display:block; color:#666">${safeTime}</small>
+                                <span>${safeDesc}</span>
                             </div>
                             <div style="text-align:right">
                                 <span style="color:${m.type === 'ingreso' ? '#4caf50' : '#f44336'}">
@@ -1245,16 +1259,21 @@ const app = {
             const isLocal = o.type === 'Local';
             const isReady = o.status === 'ready';
 
-            let itemsHtml = (o.items || []).map(i => `
-                <li>${i.name} ${i.notes ? `<br><small style='color:#f57c00'>(${i.notes})</small>` : ''}</li>
-            `).join('');
+            let itemsHtml = (o.items || []).map(i => {
+                const safeName = app.escapeHtml(i.name);
+                const safeNotes = app.escapeHtml(i.notes);
+                return `<li>${safeName} ${safeNotes ? `<br><small style='color:#f57c00'>(${safeNotes})</small>` : ''}</li>`;
+            }).join('');
+
+            const safeCustomer = app.escapeHtml(o.customer);
+            const safeTime = app.escapeHtml(o.timestamp);
 
             return `
             <div class="ticket ${isPaid ? 'paid' : 'pending-pay'}" 
                  style="${isReady ? 'opacity: 0.5; transform: scale(0.9);' : ''} ${isLocal ? 'border-left: 8px solid #2196f3;' : ''}">
                 <div class="ticket-header" style="${isPaid ? 'background: var(--success); color: white;' : 'background: var(--pending); color: white;'}">
-                    <span>#${o.id} - ${o.customer || 'S/N'}</span>
-                    <span>${o.timestamp}</span>
+                    <span>#${o.id} - ${safeCustomer || 'S/N'}</span>
+                    <span>${safeTime}</span>
                 </div>
                 <div class="ticket-body">
                     <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary-gold);">
