@@ -1,0 +1,4 @@
+## 2026-05-16 - Git Tracking of Configuration Files in Subdirectories
+**Vulnerability:** Live Firebase credentials remained exposed in `v2_secured/js/config.js` and `template ore.html`. Even though `.gitignore` listed `js/config.js`, this rule only matched the root directory and Git continued tracking `v2_secured/js/config.js`.
+**Learning:** Gitignore patterns without leading or wildcard slashes (or when written as `js/config.js`) do not automatically exclude files with identical relative paths in subdirectories (`v2_secured/js/config.js`), and files already staged/committed in index are not ignored until explicitly untracked with `git rm --cached`.
+**Prevention:** Use recursive glob patterns like `**/js/config.js` in `.gitignore` and always audit tracked files with `git ls-files` after creating new directories or templates.
